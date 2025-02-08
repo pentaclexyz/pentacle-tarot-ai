@@ -117,6 +117,33 @@ export class PentacleChat {
         }
     }
 
+    public async handleWebhookEvent(event: any) {
+        try {
+            const cast = event.data;
+            const castText = cast.text.toLowerCase();
+
+            console.log('Processing cast from webhook:', castText);
+
+            if (castText.startsWith('@pentacle-tarot ')) {
+                const cards = this.tarotReader.selectCards(3);
+                const response = this.tarotReader.formatReading(castText, cards);
+
+                console.log('Replying with:', response);
+
+                await this.client.publishCast({
+                    signerUuid: this.signerUuid,
+                    text: response,
+                    parent: cast.hash,
+                    channelId: 'tarot',
+                });
+                console.log('Reply sent successfully!');
+            }
+        } catch (error) {
+            console.error('Error handling webhook event:', error);
+        }
+    }
+
+
     private async handleCast(cast: Cast) {
         try {
             const text = cast.text.toLowerCase();
