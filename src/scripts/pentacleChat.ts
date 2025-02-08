@@ -9,6 +9,21 @@ interface Cast {
     timestamp: string;
 }
 
+interface WebhookEvent {
+    type: string;
+    data: {
+        text?: string;
+        hash?: string;
+        author?: {
+            fid: number;
+            username: string;
+        };
+        timestamp?: string;
+        [key: string]: string | number | object | undefined;
+    };
+}
+
+
 interface FetchFeedResponse {
     casts: Cast[];
 }
@@ -66,19 +81,17 @@ export class PentacleChat {
                     console.error('Polling error:', error);
                 });
             }, 10000);
-
         } catch (error) {
             console.error('Error starting polling:', error);
-            throw error;
         }
     }
 
     private async doPoll() {
         try {
             const response: FetchFeedResponse = await this.client.fetchFeed({
-                feedType: "filter",
-                filterType: "channel_id",
-                channelId: "tarot",
+                feedType: 'filter',
+                filterType: 'channel_id',
+                channelId: 'tarot',
                 limit: 20,
             });
 
@@ -109,7 +122,7 @@ export class PentacleChat {
             await this.client.publishCast({
                 signerUuid: this.signerUuid,
                 text: message,
-                channelId: "tarot",
+                channelId: 'tarot',
             });
             console.log('Test cast published to #tarot!');
         } catch (error) {
@@ -117,10 +130,15 @@ export class PentacleChat {
         }
     }
 
-    public async handleWebhookEvent(event: any) {
+    public async handleWebhookEvent(event: WebhookEvent) {
         try {
+            if (event.type !== 'cast.created') {
+                console.log('Ignoring event type:', event.type);
+                return;
+            }
+
             const cast = event.data;
-            const castText = cast.text.toLowerCase();
+            const castText = cast.text?.toLowerCase() || '';
 
             console.log('Processing cast from webhook:', castText);
 
@@ -143,18 +161,15 @@ export class PentacleChat {
         }
     }
 
-
     private async handleCast(cast: Cast) {
         try {
             const text = cast.text.toLowerCase();
             console.log('Handling cast:', text);
             let response = '';
 
-            // Require explicit invocation with "@pentacle-tarot "
             if (text.startsWith('@pentacle-tarot ')) {
                 console.log('Tarot request detected');
                 const cards = this.tarotReader.selectCards(3);
-                console.log('Selected cards:', cards);
                 response = this.tarotReader.formatReading(text, cards);
                 console.log('Generated response:', response);
             } else {
