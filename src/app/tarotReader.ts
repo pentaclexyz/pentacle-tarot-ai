@@ -54,7 +54,7 @@ class TarotReader {
         const futureTheme = future.isReversed ?
             `potential ${futureThemes[0]}` : futureThemes[0];
 
-        return `This progression shows ${pastTheme} leading to ${futureTheme}, with ${presentTheme} as your current focus.\n\nWant a deeper reading? Visit pentacletarot.xyz`;
+        return `This progression shows ${pastTheme} leading to ${futureTheme}, with ${presentTheme} as your current focus.`;
     }
 }
 

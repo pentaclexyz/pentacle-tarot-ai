@@ -1,8 +1,32 @@
-// src/scripts/cleanUpReplies.ts
-import { NeynarAPIClient } from '@neynar/nodejs-sdk';
+import axios, { AxiosResponse } from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+interface NeynarApiResponse {
+    result?: {
+        casts: Array<{
+            hash: string;
+            author: {
+                fid: number;
+                username: string;
+            };
+        }>;
+        next?: {
+            cursor?: string | null;
+        };
+    };
+    casts?: Array<{
+        hash: string;
+        author: {
+            fid: number;
+            username: string;
+        };
+    }>;
+    next?: {
+        cursor?: string | null;
+    };
+}
 
 const API_KEY = process.env.NEYNAR_API_KEY;
 const SIGNER_UUID = process.env.FARCASTER_SIGNER_UUID;
@@ -14,48 +38,92 @@ if (!API_KEY || !SIGNER_UUID) {
 }
 
 export class ReplyCleanup {
-    private client: NeynarAPIClient;
+    private apiKey: string;
     private signerUuid: string;
 
     constructor(apiKey: string, signerUuid: string) {
-        this.client = new NeynarAPIClient({ apiKey });
+        this.apiKey = apiKey;
         this.signerUuid = signerUuid;
     }
 
     public async cleanupAllReplies() {
         try {
-            console.log('Starting cleanup of all bot casts...');
+            console.log('Starting cleanup of bot replies...');
+            console.log(`Bot FID: ${BOT_FID}`);
 
-            const response = await this.client.fetchFeed({
-                feedType: "filter" as any,
-                filterType: "fids" as any,
-                fids: BOT_FID.toString(),
-                limit: 100
-            });
+            let cursor: string | undefined = undefined;
+            let totalDeleted = 0;
+            let totalAttempted = 0;
 
-            if (!response?.casts) {
-                console.log('No casts found');
-                return;
-            }
+            do {
+                const response: AxiosResponse<NeynarApiResponse> = await axios.get(
+                    // 'https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts',
+                    {
+                        params: {
+                            fid: BOT_FID,
+                            filter: 'all',
+                            limit: 50,
+                            cursor: cursor
+                        },
+                        headers: {
+                            'accept': 'application/json',
+                            'x-api-key': this.apiKey
+                        }
+                    }
+                );
 
-            console.log(`Total casts fetched: ${response.casts.length}`);
+                const casts = response.data?.result?.casts || response.data?.casts || [];
 
-            for (const cast of response.casts) {
-                try {
-                    console.log('Deleting cast:', cast.hash);
-                    await this.client.deleteCast({
-                        signerUuid: this.signerUuid,
-                        targetHash: cast.hash
-                    });
-                    console.log('Successfully deleted cast');
-                } catch (error) {
-                    console.error(`Error deleting cast ${cast.hash}:`, error);
+                console.log(`Casts found in this batch: ${casts.length}`);
+
+                // Filter out only bot-created replies
+                const botReplies = casts.filter(cast => cast.author?.fid === BOT_FID);
+
+                console.log(`Bot replies in this batch: ${botReplies.length}`);
+
+                for (const cast of botReplies) {
+                    try {
+                        totalAttempted++;
+                        console.log(`Attempting to delete reply: ${cast.hash}`);
+
+                        await axios.delete(`https://api.neynar.com/v2/farcaster/cast`, {
+                            headers: {
+                                'accept': 'application/json',
+                                'content-type': 'application/json',
+                                'x-api-key': this.apiKey
+                            },
+                            data: {
+                                target_hash: cast.hash,
+                                signer_uuid: this.signerUuid
+                            }
+                        });
+
+                        console.log(`Successfully deleted reply: ${cast.hash}`);
+                        totalDeleted++;
+                    } catch (deleteError: any) {
+                        if (deleteError.response && deleteError.response.status === 404) {
+                            console.log(`Reply ${cast.hash} not found (already deleted)`);
+                        } else {
+                            console.error(`Error deleting reply ${cast.hash}:`, deleteError);
+                        }
+                    }
                 }
-            }
 
-            console.log('Cleanup completed');
+                // Update cursor for next iteration
+                cursor = response.data.result?.next?.cursor ||
+                    response.data.next?.cursor ||
+                    undefined;
+
+                if (!cursor) break;
+
+            } while (true);
+
+            console.log(`Cleanup completed.`);
+            console.log(`Total replies attempted: ${totalAttempted}`);
+            console.log(`Total replies successfully deleted: ${totalDeleted}`);
         } catch (error) {
             console.error('Error during cleanup:', error);
+            console.error(JSON.stringify(error, null, 2));
         }
     }
 }

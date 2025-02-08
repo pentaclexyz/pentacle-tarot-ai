@@ -1,11 +1,7 @@
-// scripts/pentacleChat.ts
-
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TarotReader } from '../app/tarotReader';
-
-
 
 export class PentacleChat {
     private client: NeynarAPIClient;
@@ -13,6 +9,7 @@ export class PentacleChat {
     private processedCasts: Set<string>;
     private processedCastsFilePath: string;
     private tarotReader: TarotReader;
+
     constructor(apiKey: string, signerUuid: string) {
         this.client = new NeynarAPIClient({ apiKey });
         this.signerUuid = signerUuid;
@@ -47,16 +44,13 @@ export class PentacleChat {
 
     public async startPolling() {
         try {
-            // Verify signer (same as Ephemeris)
             const status = await this.client.lookupSigner({ signerUuid: this.signerUuid });
             if (status.status !== 'approved') {
                 throw new Error('Signer not approved');
             }
 
-            // Do first poll immediately
             await this.doPoll();
 
-            // Then poll every 10 seconds
             setInterval(() => {
                 this.doPoll().catch(error => {
                     console.error('Polling error:', error);
@@ -82,12 +76,10 @@ export class PentacleChat {
 
             for (const cast of response.casts) {
                 try {
-                    // Same "today" logic if you want to limit to today's casts only
                     const castTime = new Date(cast.timestamp);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
 
-                    // Adjust or remove if you don't want the "today only" filter
                     if (castTime >= today && !this.processedCasts.has(cast.hash)) {
                         await this.handleCast(cast);
                         this.processedCasts.add(cast.hash);
@@ -124,15 +116,15 @@ export class PentacleChat {
             console.log('Handling cast:', text);
             let response = '';
 
-            // Simplified text matching like EphemerisChat
-            if (text.includes('reading') || text.includes('tarot')) {
+            // Require explicit invocation with "@pentacle-tarot "
+            if (text.startsWith('@pentacle-tarot ')) {
                 console.log('Tarot request detected');
                 const cards = this.tarotReader.selectCards(3);
                 console.log('Selected cards:', cards);
                 response = this.tarotReader.formatReading(text, cards);
                 console.log('Generated response:', response);
             } else {
-                response = "✨ Ask for a reading by starting your message with 'reading' or 'tarot'.\n\nFor example: 'reading what should I focus on now?'";
+                response = "✨ Ask for a reading by starting your message with '@pentacle-tarot'.\n\nFor example: '@pentacle-tarot What should I focus on today?'";
             }
 
             console.log('About to publish response:', response);
@@ -149,4 +141,3 @@ export class PentacleChat {
         }
     }
 }
-
