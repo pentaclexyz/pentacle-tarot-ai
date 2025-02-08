@@ -3,6 +3,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TarotReader } from '../app/tarotReader';
 
+interface Cast {
+    hash: string;
+    text: string;
+    timestamp: string;
+}
+
+interface FetchFeedResponse {
+    casts: Cast[];
+}
+
 export class PentacleChat {
     private client: NeynarAPIClient;
     private signerUuid: string;
@@ -65,11 +75,11 @@ export class PentacleChat {
 
     private async doPoll() {
         try {
-            const response = await this.client.fetchFeed({
-                feedType: "filter" as any,
-                filterType: "channel_id" as any,
+            const response: FetchFeedResponse = await this.client.fetchFeed({
+                feedType: "filter",
+                filterType: "channel_id",
                 channelId: "tarot",
-                limit: 20
+                limit: 20,
             });
 
             if (!response?.casts) return;
@@ -89,11 +99,8 @@ export class PentacleChat {
                     console.error('Error processing cast:', error);
                 }
             }
-        } catch (error: any) {
-            console.error('Poll error:', error?.message);
-            if (error?.response?.data) {
-                console.error('API Response:', error.response.data);
-            }
+        } catch (error) {
+            console.error('Poll error:', error);
         }
     }
 
@@ -102,7 +109,7 @@ export class PentacleChat {
             await this.client.publishCast({
                 signerUuid: this.signerUuid,
                 text: message,
-                channelId: "tarot"
+                channelId: "tarot",
             });
             console.log('Test cast published to #tarot!');
         } catch (error) {
@@ -110,7 +117,7 @@ export class PentacleChat {
         }
     }
 
-    private async handleCast(cast: any) {
+    private async handleCast(cast: Cast) {
         try {
             const text = cast.text.toLowerCase();
             console.log('Handling cast:', text);
@@ -124,7 +131,9 @@ export class PentacleChat {
                 response = this.tarotReader.formatReading(text, cards);
                 console.log('Generated response:', response);
             } else {
-                response = "✨ Ask for a reading by starting your message with '@pentacle-tarot'.\n\nFor example: '@pentacle-tarot What should I focus on today?'";
+                response =
+                    "✨ Ask for a reading by starting your message with '@pentacle-tarot'.\n\n" +
+                    "For example: '@pentacle-tarot What should I focus on today?'";
             }
 
             console.log('About to publish response:', response);
@@ -132,10 +141,9 @@ export class PentacleChat {
                 signerUuid: this.signerUuid,
                 text: response,
                 parent: cast.hash,
-                channelId: 'tarot'
+                channelId: 'tarot',
             });
             console.log('Successfully published response');
-
         } catch (error) {
             console.error('Error handling cast:', error);
         }

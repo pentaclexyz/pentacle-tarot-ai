@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios'; // Removed AxiosError since it's unused.
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -57,18 +57,18 @@ export class ReplyCleanup {
 
             do {
                 const response: AxiosResponse<NeynarApiResponse> = await axios.get(
-                    // 'https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts',
+                    'https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts', // URL
                     {
                         params: {
                             fid: BOT_FID,
                             filter: 'all',
                             limit: 50,
-                            cursor: cursor
+                            cursor: cursor,
                         },
                         headers: {
-                            'accept': 'application/json',
-                            'x-api-key': this.apiKey
-                        }
+                            accept: 'application/json',
+                            'x-api-key': this.apiKey,
+                        },
                     }
                 );
 
@@ -90,21 +90,21 @@ export class ReplyCleanup {
                             headers: {
                                 'accept': 'application/json',
                                 'content-type': 'application/json',
-                                'x-api-key': this.apiKey
+                                'x-api-key': this.apiKey,
                             },
                             data: {
                                 target_hash: cast.hash,
-                                signer_uuid: this.signerUuid
-                            }
+                                signer_uuid: this.signerUuid,
+                            },
                         });
 
                         console.log(`Successfully deleted reply: ${cast.hash}`);
                         totalDeleted++;
-                    } catch (deleteError: any) {
-                        if (deleteError.response && deleteError.response.status === 404) {
+                    } catch (error: unknown) {
+                        if (axios.isAxiosError(error) && error.response?.status === 404) {
                             console.log(`Reply ${cast.hash} not found (already deleted)`);
                         } else {
-                            console.error(`Error deleting reply ${cast.hash}:`, deleteError);
+                            console.error(`Error deleting reply ${cast.hash}:`, error);
                         }
                     }
                 }
@@ -123,7 +123,6 @@ export class ReplyCleanup {
             console.log(`Total replies successfully deleted: ${totalDeleted}`);
         } catch (error) {
             console.error('Error during cleanup:', error);
-            console.error(JSON.stringify(error, null, 2));
         }
     }
 }
