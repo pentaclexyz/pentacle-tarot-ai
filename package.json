@@ -13,7 +13,9 @@
     "pentacle-chat": "ts-node src/scripts/runPentacleChat.ts",
     "clean-replies": "ts-node src/scripts/cleanUpReplies.ts",
     "test-fc": "ts-node src/scripts/test.ts",
-    "test-tw": "ts-node src/scripts/testTwitter.ts"
+    "test-tw": "ts-node src/scripts/testTwitter.ts",
+    "test-api": "ts-node src/scripts/testFilteredStreams.ts",
+    "test-access": "ts-node src/scripts/verifyTwitterAccess.ts"
   },
   "dependencies": {
     "@neynar/nodejs-sdk": "^2.10.0",

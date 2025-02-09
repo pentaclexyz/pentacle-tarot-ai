@@ -39,12 +39,8 @@ export class TarotReader {
     ): Promise<string> {
         // Build the header from your selected cards.
         const cardsHeader = `${cards
-            .map((card, index) => {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const position = ['Past', 'Present', 'Future'][index];
-                return `${card.name}${card.isReversed ? ' ℝ' : ''}`;
-            })
-            .join(' 🃏 ')}`;
+            .map((card) => `🃏 ${card.name}${card.isReversed ? ' ℝ' : ''}`)
+            .join(' ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
