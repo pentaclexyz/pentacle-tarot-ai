@@ -42,19 +42,20 @@ export class TarotReader {
             .map((card, index) => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const position = ['Past', 'Present', 'Future'][index];
-                return `${card.name}${card.isReversed ? ' r' : ''}`;
+                return `${card.name}${card.isReversed ? ' ®' : ''}`;
             })
             .join(' 🃏 ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
-            return `${positions[index]}: ${card.name}${card.isReversed ? ' (R)' : ''} - ${card.summary}`;
+            return `${positions[index]}: ${card.name}${card.isReversed ? ' ®' : ''} - ${card.summary}`;
         }).join('\n')}
 
 Please produce exactly three lines of interpretation that follow these rules:
-1. Each line must be under 60 characters.
-2. Each line must start with the symbol "✨ " (a sparkle emoji and a space).
-3. The first line interprets the Past, the second the Present, and the third the Future.
+1. Each line must be under 60 characters
+2. Each line must start with the symbol "✨ " (a sparkle emoji and a space)
+3. The first line interprets the Past, the second the Present, and the third the Future
+4. Do not add a full stop to the end of any of these first three sentences
 
 After these three lines, provide a concise final summary that seamlessly incorporates the original question (ignoring any occurrence of "@pentacle-tarot") into an overall interpretation of the reading. In your wording, do not guarantee any outcomes; use terms like "possible," "may," or "could" instead of "will."
 
