@@ -35,12 +35,14 @@ export class PentacleChat {
     private processedCastsFilePath: string;
     private tarotReader: TarotReader;
     private isTestMode: boolean;
+    private lastProcessedTime: number = 0;
+    private processingDelay: number = 2000; // 2 seconds
 
     constructor(apiKey: string, signerUuid: string, isTestMode = false) {
         this.client = new NeynarAPIClient({ apiKey });
         this.signerUuid = signerUuid;
+        this.processedCasts = new Set<string>();
         this.processedCastsFilePath = path.join(__dirname, 'processed_casts.json');
-        this.processedCasts = this.loadProcessedCasts();
         this.tarotReader = new TarotReader(process.env.OPENAI_API_KEY!);
         this.isTestMode = isTestMode;
     }
@@ -121,30 +123,50 @@ export class PentacleChat {
 
     private async handleCast(cast: Cast) {
         try {
-            const text = cast.text.toLowerCase();
-            console.log('🎭 Handling cast:', text);
-
-            if (text.startsWith('@pentacle-tarot ')) {
-                const question = text.replace('@pentacle-tarot ', '');
-                console.log('🎴 Drawing cards...');
-                const cards = this.tarotReader.selectCards(3);
-
-                const response = await this.tarotReader.formatReading(question, cards);
-
-                if (this.isTestMode) {
-                    console.log('🧪 TEST MODE - Response:', response.text);
-                    return;
-                }
-
-                await this.client.publishCast({
-                    signerUuid: this.signerUuid,
-                    text: response.text,
-                    parent: cast.hash,
-                    channelId: 'tarot',
-                });
+            // Check if we've processed this cast recently
+            if (this.processedCasts.has(cast.hash)) {
+                return;
             }
+
+            // Add rate limiting
+            const now = Date.now();
+            if (now - this.lastProcessedTime < this.processingDelay) {
+                return;
+            }
+            this.lastProcessedTime = now;
+
+            const text = cast.text.toLowerCase();
+            if (!text.startsWith('@pentacle-tarot ')) {
+                return;
+            }
+
+            console.log('🔮 Processing reading request:', text);
+
+            // Add to processed set immediately
+            this.processedCasts.add(cast.hash);
+
+            const cards = this.tarotReader.selectCards(3);
+            const response = await this.tarotReader.formatReading(text, cards);
+
+            if (this.isTestMode) {
+                console.log('TEST MODE - Would send response:', response);
+                return;
+            }
+
+            await this.client.publishCast({
+                signerUuid: this.signerUuid,
+                text: response,  // response is now just a string
+                parent: cast.hash,
+                channelId: 'tarot',
+            });
+
+            // Keep processed set from growing too large
+            if (this.processedCasts.size > 1000) {
+                this.processedCasts.clear();
+            }
+
         } catch (error) {
-            console.error('❌ Error:', error);
+            console.error('Error handling cast:', error);
         }
     }
 
@@ -168,7 +190,7 @@ export class PentacleChat {
 
                 await this.client.publishCast({
                     signerUuid: this.signerUuid,
-                    text: response.text,  // Use the text property from TarotResponse
+                    text: response,  // response is now just a string
                     parent: cast.hash,
                     channelId: 'tarot',
                 });
