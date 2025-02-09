@@ -42,13 +42,13 @@ export class TarotReader {
             .map((card, index) => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const position = ['Past', 'Present', 'Future'][index];
-                return `${card.name}${card.isReversed ? ' ®' : ''}`;
+                return `${card.name}${card.isReversed ? ' Ⓡ' : ''}`;
             })
             .join(' 🃏 ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
-            return `${positions[index]}: ${card.name}${card.isReversed ? ' ®' : ''} - ${card.summary}`;
+            return `${positions[index]}: ${card.name}${card.isReversed ? ' Ⓡ' : ''} - ${card.summary}`;
         }).join('\n')}
 
 Please produce exactly three lines of interpretation that follow these rules:
