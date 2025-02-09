@@ -75,22 +75,8 @@ Rules:
             return `🔮 ${cardsDisplay}\n\n${interpretation}`;
         } catch (error) {
             console.error('Error generating reading:', error);
-            // Fallback to a simpler interpretation
-            return this.generateFallbackReading(cards);
+            // Throw an error instead of returning a fallback
+            throw new Error('Failed to generate tarot reading');
         }
-    }
-
-    private generateFallbackReading(cards: Array<TarotCard & { isReversed: boolean }>): string {
-        const cardsDisplay = cards.map((card, index) => {
-            const position = ['Past', 'Present', 'Future'][index];
-            return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''}`;
-        }).join('\n');
-
-        const interpretations = cards.map(card => {
-            const theme = card.summary.split(',')[0].trim();
-            return `✧ ${theme}`;
-        }).join('\n');
-
-        return `🔮 ${cardsDisplay}\n\n${interpretations}`;
     }
 }

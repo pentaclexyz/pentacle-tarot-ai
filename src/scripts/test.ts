@@ -1,5 +1,5 @@
 // test.ts
-import { PentacleChat } from '../scripts/PentacleChat';
+import { PentacleChat } from './pentacleChat';
 import dotenv from 'dotenv';
 
 dotenv.config();
