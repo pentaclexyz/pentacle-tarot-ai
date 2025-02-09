@@ -202,7 +202,7 @@ export class PentacleChat {
             }
 
             const cast = event.data;
-            const castHash = cast.hash;
+            const castHash = cast.hash || 'unknown-hash';  // Provide a default value
             const castText = cast.text?.toLowerCase() || '';
 
             // Check if this cast has already been processed
@@ -225,7 +225,7 @@ export class PentacleChat {
                 await this.client.publishCast({
                     signerUuid: this.signerUuid,
                     text: response,
-                    parent: cast.hash,
+                    parent: castHash,
                     channelId: 'tarot',
                 });
                 console.log('Reply sent successfully!');
