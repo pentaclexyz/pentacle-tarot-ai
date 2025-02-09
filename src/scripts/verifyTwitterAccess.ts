@@ -18,12 +18,19 @@ async function basicEndpointTest() {
         // Use the GET method to access the recent search endpoint with valid parameters
         const searchResult = await client.v2.get('tweets/search/recent', { query: 'from:TwitterDev', max_results: 10 });
         console.log('Search result:', searchResult);
-    } catch (error: any) {
-        if (error.code === 429) {
-            console.error('Rate limit exceeded. Please try again later.');
+    } catch (error: unknown) {
+        // Narrow the type of error
+        if (typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code: number }).code === 'number') {
+            const err = error as { code: number };
+            if (err.code === 429) {
+                console.error('Rate limit exceeded. Please try again later.');
+            } else {
+                console.error('Endpoint Test Error:', error);
+                console.error('Detailed Error:', JSON.stringify(error, null, 2));
+            }
         } else {
+            // If error does not have a code property, log it directly.
             console.error('Endpoint Test Error:', error);
-            console.error('Detailed Error:', JSON.stringify(error, null, 2));
         }
     }
 }

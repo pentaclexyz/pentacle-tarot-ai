@@ -39,7 +39,7 @@ export class TwitterIntegration {
             appSecret: process.env.TWITTER_API_SECRET as string,
             accessToken: process.env.TWITTER_ACCESS_TOKEN as string,
             accessSecret: process.env.TWITTER_ACCESS_SECRET as string,
-        } as any);
+        });
 
         // Initialize the streaming client using the Bearer Token (OAuth 2.0)
         this.streamingClient = new TwitterApi(process.env.TWITTER_BEARER_TOKEN as string);
