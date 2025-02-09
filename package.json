@@ -12,7 +12,8 @@
     "lint": "next lint",
     "pentacle-chat": "ts-node src/scripts/runPentacleChat.ts",
     "clean-replies": "ts-node src/scripts/cleanUpReplies.ts",
-    "test": "ts-node src/scripts/test.ts"
+    "test-fc": "ts-node src/scripts/test.ts",
+    "test-tw": "ts-node src/scripts/testTwitter.ts"
   },
   "dependencies": {
     "@neynar/nodejs-sdk": "^2.10.0",

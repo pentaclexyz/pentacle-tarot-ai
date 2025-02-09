@@ -14,7 +14,7 @@ export class TarotService {
         this.isTestMode = isTestMode;
     }
 
-    protected async generateReading(question: string): Promise<string> {
+    public async generateReading(question: string): Promise<string> {
         // Rate limiting
         const now = Date.now();
         if (now - this.lastProcessedTime < this.processingDelay) {

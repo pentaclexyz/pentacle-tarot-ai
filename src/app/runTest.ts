@@ -1,11 +1,11 @@
 // runTest.ts
-import { PentacleChat } from '../scripts/pentacleChat';
+import { FarcasterIntegration } from '../scripts/farcasterIntegration';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 async function test() {
-    const pentacleChat = new PentacleChat(
+    const pentacleChat = new FarcasterIntegration(
         process.env.NEYNAR_API_KEY!,
         process.env.SIGNER_UUID!,
         true  // Enable test mode
