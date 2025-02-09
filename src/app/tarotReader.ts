@@ -42,9 +42,9 @@ export class TarotReader {
             .map((card, index) => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const position = ['Past', 'Present', 'Future'][index];
-                return `🃏${card.name}${card.isReversed ? ' (R)' : ''}`;
+                return `${card.name}${card.isReversed ? ' r' : ''}`;
             })
-            .join(' ☆ ')}`;
+            .join(' 🃏 ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
