@@ -62,33 +62,26 @@ export class TwitterIntegration {
                 console.log('Already processed tweet:', mention.id);
                 return;
             }
-
             this.processedTweets.add(mention.id);
 
             // Generate reading
             const cards = this.tarotReader.selectCards(3);
             const response = await this.tarotReader.formatReading(mention.text, cards);
 
-            console.log('Generated reading:', response);
-
             if (this.isTestMode) {
-                console.log('TEST MODE - Would reply to tweet with:', response);
+                console.log(`TEST MODE - For tweet ${mention.id}, generated reading: ${response}`);
                 return;
             }
 
-            // Reply to the tweet
-            await this.client.v2.reply(
-                response,
-                mention.id
-            );
-
+            // Reply to the tweet (live mode)
+            await this.client.v2.reply(response, mention.id);
             console.log('Successfully replied to tweet:', mention.id);
-
         } catch (error) {
             console.error('Error handling mention:', error);
             throw error;
         }
     }
+
 
     async startListening(): Promise<void> {
         if (this.isTestMode) {
