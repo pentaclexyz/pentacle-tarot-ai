@@ -44,7 +44,7 @@ export class TarotReader {
                 const position = ['Past', 'Present', 'Future'][index];
                 return `🃏${card.name}${card.isReversed ? ' (R)' : ''}`;
             })
-            .join(' | ')}`;
+            .join(' ☆ ')}`;
 
         const prompt = `Using the following cards, provide a three-line tarot interpretation.
 Original question: "${question}"
