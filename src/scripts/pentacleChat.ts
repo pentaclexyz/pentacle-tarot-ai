@@ -2,6 +2,7 @@ import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TarotReader } from '../app/tarotReader';
+import { TarotResponse } from '../types/tarot';
 
 interface Cast {
     hash: string;
@@ -23,10 +24,10 @@ interface WebhookEvent {
     };
 }
 
-
 interface FetchFeedResponse {
     casts: Cast[];
 }
+
 
 export class PentacleChat {
     private client: NeynarAPIClient;
@@ -34,13 +35,15 @@ export class PentacleChat {
     private processedCasts: Set<string>;
     private processedCastsFilePath: string;
     private tarotReader: TarotReader;
+    private isTestMode: boolean;
 
-    constructor(apiKey: string, signerUuid: string) {
+    constructor(apiKey: string, signerUuid: string, isTestMode = false) {
         this.client = new NeynarAPIClient({ apiKey });
         this.signerUuid = signerUuid;
         this.processedCastsFilePath = path.join(__dirname, 'processed_casts.json');
         this.processedCasts = this.loadProcessedCasts();
-        this.tarotReader = new TarotReader();
+        this.tarotReader = new TarotReader(process.env.OPENAI_API_KEY!);
+        this.isTestMode = isTestMode;
     }
 
     private loadProcessedCasts(): Set<string> {
@@ -117,16 +120,32 @@ export class PentacleChat {
         }
     }
 
-    public async sendTestCast(message: string) {
+    private async handleCast(cast: Cast) {
         try {
-            await this.client.publishCast({
-                signerUuid: this.signerUuid,
-                text: message,
-                channelId: 'tarot',
-            });
-            console.log('Test cast published to #tarot!');
+            const text = cast.text.toLowerCase();
+            console.log('🎭 Handling cast:', text);
+
+            if (text.startsWith('@pentacle-tarot ')) {
+                const question = text.replace('@pentacle-tarot ', '');
+                console.log('🎴 Drawing cards...');
+                const cards = this.tarotReader.selectCards(3);
+
+                const response = await this.tarotReader.formatReading(question, cards);
+
+                if (this.isTestMode) {
+                    console.log('🧪 TEST MODE - Response:', response.text);
+                    return;
+                }
+
+                await this.client.publishCast({
+                    signerUuid: this.signerUuid,
+                    text: response.text,
+                    parent: cast.hash,
+                    channelId: 'tarot',
+                });
+            }
         } catch (error) {
-            console.error('Error publishing test cast:', error);
+            console.error('❌ Error:', error);
         }
     }
 
@@ -144,13 +163,13 @@ export class PentacleChat {
 
             if (castText.startsWith('@pentacle-tarot ')) {
                 const cards = this.tarotReader.selectCards(3);
-                const response = this.tarotReader.formatReading(castText, cards);
+                const response = await this.tarotReader.formatReading(castText, cards);
 
                 console.log('Replying with:', response);
 
                 await this.client.publishCast({
                     signerUuid: this.signerUuid,
-                    text: response,
+                    text: response.text,  // Use the text property from TarotResponse
                     parent: cast.hash,
                     channelId: 'tarot',
                 });
@@ -161,29 +180,13 @@ export class PentacleChat {
         }
     }
 
-    private async handleCast(cast: Cast) {
-        try {
-            const text = cast.text.toLowerCase();
-            console.log('Handling cast:', text);
+    public async testReading(question: string) {
+        const testCast = {
+            hash: 'test-hash-' + Date.now(),
+            text: question,
+            timestamp: new Date().toISOString()
+        };
 
-            // Only respond if the message starts with @pentacle-tarot
-            if (text.startsWith('@pentacle-tarot ')) {
-                console.log('Tarot request detected');
-                const cards = this.tarotReader.selectCards(3);
-                const response = this.tarotReader.formatReading(text, cards);
-                console.log('Generated response:', response);
-
-                console.log('About to publish response:', response);
-                await this.client.publishCast({
-                    signerUuid: this.signerUuid,
-                    text: response,
-                    parent: cast.hash,
-                    channelId: 'tarot',
-                });
-                console.log('Successfully published response');
-            }
-        } catch (error) {
-            console.error('Error handling cast:', error);
-        }
+        await this.handleCast(testCast);
     }
 }

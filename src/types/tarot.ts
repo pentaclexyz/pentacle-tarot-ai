@@ -11,3 +11,8 @@ export interface TarotCard {
     element: string;
     zodiac: string;
 }
+
+export interface TarotResponse {
+    text: string;
+    images?: string[];
+}
