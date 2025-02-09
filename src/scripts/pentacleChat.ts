@@ -165,27 +165,23 @@ export class PentacleChat {
         try {
             const text = cast.text.toLowerCase();
             console.log('Handling cast:', text);
-            let response = '';
 
+            // Only respond if the message starts with @pentacle-tarot
             if (text.startsWith('@pentacle-tarot ')) {
                 console.log('Tarot request detected');
                 const cards = this.tarotReader.selectCards(3);
-                response = this.tarotReader.formatReading(text, cards);
+                const response = this.tarotReader.formatReading(text, cards);
                 console.log('Generated response:', response);
-            } else {
-                response =
-                    "✨ Ask for a reading by starting your message with '@pentacle-tarot'.\n\n" +
-                    "For example: '@pentacle-tarot What should I focus on today?'";
-            }
 
-            console.log('About to publish response:', response);
-            await this.client.publishCast({
-                signerUuid: this.signerUuid,
-                text: response,
-                parent: cast.hash,
-                channelId: 'tarot',
-            });
-            console.log('Successfully published response');
+                console.log('About to publish response:', response);
+                await this.client.publishCast({
+                    signerUuid: this.signerUuid,
+                    text: response,
+                    parent: cast.hash,
+                    channelId: 'tarot',
+                });
+                console.log('Successfully published response');
+            }
         } catch (error) {
             console.error('Error handling cast:', error);
         }
