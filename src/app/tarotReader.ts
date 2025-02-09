@@ -40,7 +40,7 @@ export class TarotReader {
         // Build the header from your selected cards.
         const cardsHeader = `${cards
             .map((card) => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
-            .join(' | ')}`;
+            .join(' ⋆˙ ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
@@ -49,7 +49,7 @@ export class TarotReader {
 
 Please produce exactly three lines of interpretation that follow these rules:
 1. Each line must be under 60 characters
-2. Each line must start with the symbol "✧ "
+2. Each line must start with the symbol "⭑ "
 3. The first line interprets the Past, the second the Present, and the third the Future
 4. Do not add a full stop to the end of any of these first three sentences
 
