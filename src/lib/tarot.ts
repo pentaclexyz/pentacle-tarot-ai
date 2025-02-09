@@ -1,3 +1,5 @@
+// lib/tarot.ts
+
 import { TarotCard } from "@/types/tarot";
 
 export const TAROT_CARDS: ReadonlyArray<TarotCard> = [

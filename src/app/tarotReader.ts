@@ -1,3 +1,5 @@
+// tarotReader
+
 import { TarotCard } from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
@@ -31,20 +33,28 @@ export class TarotReader {
         return selected;
     }
 
-    async formatReading(question: string, cards: Array<TarotCard & { isReversed: boolean }>): Promise<string> {
-        // First format the cards display
-        const cardsDisplay = cards.map((card, index) => {
-            const position = ['Past', 'Present', 'Future'][index];
-            return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''}`;
-        }).join('\n');
+    async formatReading(
+        question: string,
+        cards: Array<TarotCard & { isReversed: boolean }>
+    ): Promise<string> {
+        // Create a concise display of the drawn cards.
+        const cardsDisplay = cards
+            .map((card, index) => {
+                const position = ['Past', 'Present', 'Future'][index];
+                return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''}`;
+            })
+            .join(' | ');
 
+        // Build the GPT prompt with details of the cards.
         const prompt = `Create a hopeful three-line tarot interpretation (one line per card, max 200 chars total). Original question: "${question}"
 
 Cards drawn:
-${cards.map((card, index) => {
-            const position = ['Past', 'Present', 'Future'][index];
-            return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''} - ${card.summary}`;
-        }).join('\n')}
+${cards
+            .map((card, index) => {
+                const position = ['Past', 'Present', 'Future'][index];
+                return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''} - ${card.summary}`;
+            })
+            .join('\n')}
 
 Rules:
 1. Keep each line under 60 characters
@@ -60,7 +70,8 @@ Rules:
                 messages: [
                     {
                         role: "system",
-                        content: "You are an insightful and encouraging tarot reader who finds the light in every spread."
+                        content:
+                            "You are an insightful and encouraging tarot reader who finds the light in every spread."
                     },
                     {
                         role: "user",
@@ -72,11 +83,17 @@ Rules:
             });
 
             const interpretation = completion.choices[0].message.content;
-            return `🔮 ${cardsDisplay}\n\n${interpretation}`;
+            if (interpretation === null) {
+                throw new Error("Received null response from GPT-4");
+            }
+            // Return a single message that shows the drawn cards and the GPT reading.
+            return `Cards: ${cardsDisplay}\n\n${interpretation}`;
         } catch (error) {
-            console.error('Error generating reading:', error);
-            // Throw an error instead of returning a fallback
-            throw new Error('Failed to generate tarot reading');
+            console.error("Error generating reading:", error);
+            throw new Error("Failed to generate tarot reading");
         }
     }
+
+
+
 }
