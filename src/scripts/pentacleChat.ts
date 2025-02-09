@@ -123,49 +123,43 @@ export class PentacleChat {
 
     private async handleCast(cast: Cast) {
         try {
-            console.log('HANDLE CAST - FULL DETAILS', {
-                castHash: cast.hash,
-                castText: cast.text,
-                timestamp: cast.timestamp,
+            const castHash = cast.hash || 'unknown-hash';
+            const text = cast.text.toLowerCase();
+
+            console.log('HANDLE CAST DETAILS', {
+                castHash,
+                text,
                 processedCasts: Array.from(this.processedCasts)
             });
 
-            // Check if we've processed this cast recently
-            if (this.processedCasts.has(cast.hash)) {
-                console.log(`DUPLICATE CAST DETECTION: Cast ${cast.hash} already processed`);
+            // Check if already processed or not a tarot request
+            if (this.processedCasts.has(castHash) || !text.startsWith('@pentacle-tarot')) {
+                console.log('Skipping cast', {
+                    alreadyProcessed: this.processedCasts.has(castHash),
+                    isNotTarotRequest: !text.startsWith('@pentacle-tarot')
+                });
                 return;
             }
 
-            // Add rate limiting
+            // Rate limiting
             const now = Date.now();
             if (now - this.lastProcessedTime < this.processingDelay) {
-                console.log('RATE LIMIT TRIGGERED', {
-                    now,
-                    lastProcessedTime: this.lastProcessedTime,
-                    delay: this.processingDelay
-                });
+                console.log('RATE LIMIT TRIGGERED');
                 return;
             }
             this.lastProcessedTime = now;
 
-            const text = cast.text.toLowerCase();
-            if (!text.startsWith('@pentacle-tarot ')) {
-                console.log('CAST DOES NOT MATCH @pentacle-tarot', { text });
-                return;
-            }
-
             console.log('🔮 Processing reading request:', text);
 
-            // Add to processed set immediately
-            this.processedCasts.add(cast.hash);
+            // Mark as processed immediately
+            this.processedCasts.add(castHash);
 
             const cards = this.tarotReader.selectCards(3);
             const response = await this.tarotReader.formatReading(text, cards);
 
             console.log('GENERATED RESPONSE', {
                 responseLength: response.length,
-                responsePreview: response.substring(0, 200),
-                cardNames: cards.map(card => card.name)
+                responsePreview: response.substring(0, 200)
             });
 
             if (this.isTestMode) {
@@ -176,15 +170,13 @@ export class PentacleChat {
             await this.client.publishCast({
                 signerUuid: this.signerUuid,
                 text: response,
-                parent: cast.hash,
+                parent: castHash,
                 channelId: 'tarot',
             });
 
-            console.log('CAST PUBLISHED SUCCESSFULLY', {
-                castHash: cast.hash
-            });
+            console.log('CAST PUBLISHED SUCCESSFULLY');
 
-            // Keep processed set from growing too large
+            // Prevent processed set from growing too large
             if (this.processedCasts.size > 1000) {
                 this.processedCasts.clear();
             }
@@ -202,38 +194,47 @@ export class PentacleChat {
             }
 
             const cast = event.data;
-            const castHash = cast.hash || 'unknown-hash';  // Provide a default value
+            const castHash = cast.hash || 'unknown-hash';
             const castText = cast.text?.toLowerCase() || '';
 
-            // Check if this cast has already been processed
-            if (this.processedCasts.has(castHash)) {
-                console.log(`Cast ${castHash} already processed. Skipping.`);
+            console.log('WEBHOOK EVENT DETAILS', {
+                castHash,
+                castText,
+                processedCasts: Array.from(this.processedCasts)
+            });
+
+            // Check if already processed or not a tarot request
+            if (this.processedCasts.has(castHash) || !castText.startsWith('@pentacle-tarot')) {
+                console.log('Skipping webhook event', {
+                    alreadyProcessed: this.processedCasts.has(castHash),
+                    isNotTarotRequest: !castText.startsWith('@pentacle-tarot')
+                });
                 return;
             }
 
-            console.log('Processing cast from webhook:', castText);
+            // Mark as processed immediately
+            this.processedCasts.add(castHash);
 
-            if (castText.startsWith('@pentacle-tarot ')) {
-                // Add to processed casts immediately to prevent duplicate processing
-                this.processedCasts.add(castHash);
+            const cards = this.tarotReader.selectCards(3);
+            const response = await this.tarotReader.formatReading(castText, cards);
 
-                const cards = this.tarotReader.selectCards(3);
-                const response = await this.tarotReader.formatReading(castText, cards);
+            console.log('WEBHOOK RESPONSE', {
+                responseLength: response.length,
+                responsePreview: response.substring(0, 200)
+            });
 
-                console.log('Replying with:', response);
+            await this.client.publishCast({
+                signerUuid: this.signerUuid,
+                text: response,
+                parent: castHash,
+                channelId: 'tarot',
+            });
 
-                await this.client.publishCast({
-                    signerUuid: this.signerUuid,
-                    text: response,
-                    parent: castHash,
-                    channelId: 'tarot',
-                });
-                console.log('Reply sent successfully!');
+            console.log('WEBHOOK REPLY SENT SUCCESSFULLY');
 
-                // Prevent processed casts set from growing too large
-                if (this.processedCasts.size > 1000) {
-                    this.processedCasts.clear();
-                }
+            // Prevent processed set from growing too large
+            if (this.processedCasts.size > 1000) {
+                this.processedCasts.clear();
             }
         } catch (error) {
             console.error('Error handling webhook event:', error);
