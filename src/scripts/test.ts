@@ -11,7 +11,7 @@ async function runTest() {
         true  // Enable test mode
     );
 
-    const testQuestion = '@pentacle-tarot What does my career path look like?';
+    const testQuestion = '@pentacle-tarot What does my love life look like?';
 
     console.log('Testing with question:', testQuestion);
     await pentacleChat.testReading(testQuestion);

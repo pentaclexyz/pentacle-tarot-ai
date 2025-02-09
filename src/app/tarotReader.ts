@@ -37,32 +37,29 @@ export class TarotReader {
         question: string,
         cards: Array<TarotCard & { isReversed: boolean }>
     ): Promise<string> {
-        // Create a concise display of the drawn cards.
-        const cardsDisplay = cards
+        // Build the header from your selected cards.
+        const cardsHeader = `${cards
             .map((card, index) => {
-                const position = ['Past', 'Present', 'Future'][index];
-                return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''}`;
+                // const position = ['Past', 'Present', 'Future'][index];
+                return `🃏${card.name}${card.isReversed ? ' (R)' : ''}`;
             })
-            .join(' | ');
+            .join(' | ')}`;
 
-        // Build the GPT prompt with details of the cards.
-        const prompt = `Create a hopeful three-line tarot interpretation (one line per card, max 200 chars total). Original question: "${question}"
-
-Cards drawn:
+        const prompt = `Using the following cards, provide a three-line tarot interpretation.
+Original question: "${question}"
 ${cards
             .map((card, index) => {
                 const position = ['Past', 'Present', 'Future'][index];
-                return `${position}: ${card.name}${card.isReversed ? ' (R)' : ''} - ${card.summary}`;
+                return `${position}: ${card.name} - ${card.summary}`;
             })
             .join('\n')}
 
 Rules:
-1. Keep each line under 60 characters
-2. Start each line with ✧
-3. Be encouraging but honest
-4. Frame challenges as opportunities
-5. Use active, direct language
-6. First line past tense, second present tense, third future tense`;
+1. Produce exactly three lines.
+2. Each line must be under 60 characters.
+3. Each line must start with the symbol " ✨" and have a space between it and the text.
+4. The first line interprets the Past, the second the Present, and the third the Future.
+5. Do not include any additional text, headers, or summary.`;
 
         try {
             const completion = await this.openai.chat.completions.create({
@@ -70,8 +67,7 @@ Rules:
                 messages: [
                     {
                         role: "system",
-                        content:
-                            "You are an insightful and encouraging tarot reader who finds the light in every spread."
+                        content: "You are an insightful and encouraging tarot reader."
                     },
                     {
                         role: "user",
@@ -79,21 +75,20 @@ Rules:
                     }
                 ],
                 temperature: 0.7,
-                max_tokens: 100,
+                max_tokens: 150,
             });
 
             const interpretation = completion.choices[0].message.content;
             if (interpretation === null) {
                 throw new Error("Received null response from GPT-4");
             }
-            // Return a single message that shows the drawn cards and the GPT reading.
-            return `Cards: ${cardsDisplay}\n\n${interpretation}`;
+
+            // Combine the header and GPT interpretation into one unified reply.
+            const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}`;
+            return unifiedReply;
         } catch (error) {
             console.error("Error generating reading:", error);
             throw new Error("Failed to generate tarot reading");
         }
     }
-
-
-
 }
