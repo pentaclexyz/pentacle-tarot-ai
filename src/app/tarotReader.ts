@@ -40,7 +40,7 @@ export class TarotReader {
         // Build the header from your selected cards.
         const cardsHeader = `${cards
             .map((card) => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
-            .join(' . ')}`;
+            .join(' | ')}`;
 
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
