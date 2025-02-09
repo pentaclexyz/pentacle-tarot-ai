@@ -1,12 +1,7 @@
-// pentacleChat.ts
-
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
-import { TarotReader } from '../app/tarotReader';
-import { TwitterIntegration } from './twitterIntegration';
-import dotenv from 'dotenv';
-dotenv.config();
+import { TarotService } from './tarotService';
 
 interface Cast {
     hash: string;
@@ -32,23 +27,18 @@ interface FetchFeedResponse {
     casts: Cast[];
 }
 
-export class PentacleChat {
+export class FarcasterIntegration extends TarotService {
     private client: NeynarAPIClient;
     private signerUuid: string;
     private processedCasts: Set<string>;
     private processedCastsFilePath: string;
-    private tarotReader: TarotReader;
-    private isTestMode: boolean;
-    private lastProcessedTime: number = 0;
-    private processingDelay: number = 2000; // 2 seconds
 
     constructor(apiKey: string, signerUuid: string, isTestMode = false) {
+        super(isTestMode);
         this.client = new NeynarAPIClient({ apiKey });
         this.signerUuid = signerUuid;
         this.processedCasts = new Set<string>();
         this.processedCastsFilePath = path.join(__dirname, 'processed_casts.json');
-        this.tarotReader = new TarotReader(process.env.OPENAI_API_KEY!);
-        this.isTestMode = isTestMode;
     }
 
     private saveProcessedCasts() {
@@ -133,26 +123,8 @@ export class PentacleChat {
                 return;
             }
 
-            // Rate limiting
-            const now = Date.now();
-            if (now - this.lastProcessedTime < this.processingDelay) {
-                console.log('RATE LIMIT TRIGGERED');
-                return;
-            }
-            this.lastProcessedTime = now;
-
-            console.log('🔮 Processing reading request:', text);
-
-            // Mark as processed immediately
-            this.processedCasts.add(castHash);
-
-            const cards = this.tarotReader.selectCards(3);
-            const response = await this.tarotReader.formatReading(text, cards);
-
-            console.log('GENERATED RESPONSE', {
-                responseLength: response.length,
-                responsePreview: response.substring(0, 200)
-            });
+            const response = await this.generateReading(text);
+            if (!response) return;
 
             if (this.isTestMode) {
                 console.log('TEST MODE - Would send response:', response);
@@ -195,7 +167,6 @@ export class PentacleChat {
                 processedCasts: Array.from(this.processedCasts)
             });
 
-            // Check if already processed or not a tarot request
             if (this.processedCasts.has(castHash) || !castText.startsWith('@pentacle-tarot')) {
                 console.log('Skipping webhook event', {
                     alreadyProcessed: this.processedCasts.has(castHash),
@@ -204,16 +175,10 @@ export class PentacleChat {
                 return;
             }
 
-            // Mark as processed immediately
             this.processedCasts.add(castHash);
 
-            const cards = this.tarotReader.selectCards(3);
-            const response = await this.tarotReader.formatReading(castText, cards);
-
-            console.log('WEBHOOK RESPONSE', {
-                responseLength: response.length,
-                responsePreview: response.substring(0, 200)
-            });
+            const response = await this.generateReading(castText);
+            if (!response) return;
 
             await this.client.publishCast({
                 signerUuid: this.signerUuid,
@@ -224,7 +189,6 @@ export class PentacleChat {
 
             console.log('WEBHOOK REPLY SENT SUCCESSFULLY');
 
-            // Prevent processed set from growing too large
             if (this.processedCasts.size > 1000) {
                 this.processedCasts.clear();
             }
