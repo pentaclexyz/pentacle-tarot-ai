@@ -42,20 +42,33 @@ export class TarotReader {
             .map((card) => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
             .join(' ┆ ')}`;
 
+        // Ensure the AI *must* address the exact question asked.
         const prompt = `${cards.map((card, index) => {
             const positions = ['Past', 'Present', 'Future'];
             return `${positions[index]}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`;
         }).join('\n')}
 
-Please produce exactly three lines of interpretation that follow these rules:
-1. Each line must be under 60 characters
-2. Each line must start with the symbol "✧ "
-3. The first line interprets the Past, the second the Present, and the third the Future
-4. Do not add a full stop to the end of any of these first three sentences
+You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
 
-After these three lines, provide a concise final summary that seamlessly incorporates the original question (ignoring any occurrence of "@pentacle-tarot") into an overall interpretation of the reading. In your wording, do not guarantee any outcomes; use terms like "possible," "may," or "could" instead of "will."
+**Your Response Format:**
+- **Three-line interpretation:**
+  1. Each line must be under **60 characters**.
+  2. Each line must start with **"✧ "**.
+  3. The first line interprets **the Past**, the second **the Present**, and the third **the Future**.
+  4. **Do not add a full stop** at the end of any of these lines.
 
-Do not include any additional text, headers, or labels`;
+- **Final Summary:**
+  - Weave in the querent’s **exact question** (without "@pentacle-tarot").
+  - **Never change, reinterpret, or invent** a different question.
+  - **Make it sound like real advice, not AI-generated.**
+  - **Use hedging language** ("possible," "may," or "could") for future outcomes.
+  - **Strictly limit to 3 sentences.**  
+  - **Final sentence must be fully complete.**
+  - **Start the summary with "Regarding your question about [topic]..."** to confirm you are addressing their exact query.
+
+**User's Question:** "${question}"
+
+Do not include any additional text, headers, or labels. Just the reading.`;
 
         try {
             const completion = await this.openai.chat.completions.create({
@@ -63,7 +76,7 @@ Do not include any additional text, headers, or labels`;
                 messages: [
                     {
                         role: "system",
-                        content: "You are an insightful and encouraging tarot reader."
+                        content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
                     },
                     {
                         role: "user",
@@ -75,11 +88,11 @@ Do not include any additional text, headers, or labels`;
             });
 
             const interpretation = completion.choices[0].message.content;
-            if (interpretation === null) {
+            if (!interpretation) {
                 throw new Error("Received null response from GPT-4");
             }
 
-            // Combine the header and GPT interpretation into one unified reply.
+            // Combine the header and AI-generated interpretation into one response.
             const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}`;
             return unifiedReply;
         } catch (error) {
@@ -87,4 +100,5 @@ Do not include any additional text, headers, or labels`;
             throw new Error("Failed to generate tarot reading");
         }
     }
+
 }
