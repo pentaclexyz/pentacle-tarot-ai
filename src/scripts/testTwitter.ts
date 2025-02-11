@@ -4,12 +4,32 @@ import readline from 'readline';
 
 dotenv.config();
 
-// Helper function to ask for user input via the CLI.
+// List of randomized test questions for Twitter
+const testQuestions = [
+    "@pentacletarot What does my love life look like?",
+    "@pentacletarot Will I find true love soon?",
+    "@pentacletarot Should I take this new job offer?",
+    "@pentacletarot What’s blocking my success?",
+    "@pentacletarot Will I ever get back with my ex?",
+    "@pentacletarot Is my crush into me?",
+    "@pentacletarot What’s my next career move?",
+    "@pentacletarot Should I trust this person?",
+    "@pentacletarot What should I focus on this month?",
+    "@pentacletarot Will my creative project succeed?"
+];
+
+// Function to pick a random test question
+function getRandomTestQuestion(): string {
+    return testQuestions[Math.floor(Math.random() * testQuestions.length)];
+}
+
+// Helper function for CLI input
 const askQuestion = (query: string): Promise<string> => {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
     });
+
     return new Promise((resolve) => {
         rl.question(query, (answer) => {
             rl.close();
@@ -20,40 +40,34 @@ const askQuestion = (query: string): Promise<string> => {
 
 async function testTwitter() {
     try {
-        console.log("Starting Twitter test...");
+        console.log("🔄 Starting Twitter test...");
 
-        // Create a test-mode instance to generate the reading without live posting.
+        // Create a test-mode instance
         const testIntegration = new TwitterIntegration(true);
-        const testTweet = "@pentacletarot What does my career look like in 2024? 🔮";
-        console.log("\nProcessing tweet:");
-        console.log(testTweet);
+        const testTweet = getRandomTestQuestion(); // Randomized test question
 
-        // Temporarily suppress console.log to avoid extra logs from handleMention.
-        const originalConsoleLog = console.log;
-        console.log = () => {};
+        console.log("\nProcessing test tweet:");
+        console.log(`📨 "${testTweet}"`);
 
+        // ✅ Generate the tarot reading only once
         const tarotReading = await testIntegration.handleMention({
             id: String(Math.floor(Math.random() * 1e18)), // Random numeric ID
             text: testTweet,
-            author_id: 'test-author'
+            author_id: 'test-user'
         });
 
-        // Restore console.log
-        console.log = originalConsoleLog;
-
-        // Print the generated reading only once.
-        console.log("\nGenerated Reading:");
+        console.log("\n🎴 Generated Reading:");
         console.log(tarotReading);
 
-        // Ask for confirmation before publishing the tweet.
-        const confirmation = await askQuestion("\nDo you want to publish this tweet to your main Twitter account? (yes/no): ");
-        const answer = confirmation.trim().toLowerCase();
-        if (answer === "yes" || answer === "y") {
-            console.log("Publishing tweet...");
+        // Ask user if they want to post the tweet
+        const confirmation = await askQuestion("\n🚀 Publish this tweet to your main account? (yes/no): ");
+        if (confirmation.trim().toLowerCase().startsWith("y")) {
+            console.log("📤 Publishing tweet...");
 
-            // Create a live-mode instance and post the tweet.
+            // ✅ Reuse the same tarot reading instead of generating another one
             const liveIntegration = new TwitterIntegration(false);
             const published = await liveIntegration.tweet(tarotReading);
+
             if (published) {
                 console.log("✅ Tweet published successfully.");
             } else {
@@ -69,4 +83,5 @@ async function testTwitter() {
     }
 }
 
+// Run the test
 testTwitter().catch(console.error);

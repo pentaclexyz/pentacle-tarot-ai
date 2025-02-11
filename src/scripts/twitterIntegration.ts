@@ -70,9 +70,10 @@ export class TwitterIntegration {
             }
             this.processedTweets.add(mention.id);
 
-            // Generate reading
-            const cards = this.tarotReader.selectCards(3);
-            const response = await this.tarotReader.formatReading(mention.text, cards);
+            const spreadType = this.tarotReader.determineSpreadType(mention.text); // Get correct spread
+            const cards = this.tarotReader.selectCards(spreadType); // Use spread type
+            const response = await this.tarotReader.formatReading(mention.text, cards, spreadType); // Pass spread type
+
 
             if (!response) {
                 console.log("Generated response is empty.");

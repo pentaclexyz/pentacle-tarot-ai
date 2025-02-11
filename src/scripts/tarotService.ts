@@ -25,8 +25,9 @@ export class TarotService {
 
         console.log('🔮 Processing reading request:', question);
 
-        const cards = this.tarotReader.selectCards(3);
-        const response = await this.tarotReader.formatReading(question, cards);
+        const spreadType = this.tarotReader.determineSpreadType(question);
+        const cards = this.tarotReader.selectCards(spreadType);
+        const response = await this.tarotReader.formatReading(question, cards, spreadType);
 
         console.log('GENERATED RESPONSE', {
             responseLength: response.length,
