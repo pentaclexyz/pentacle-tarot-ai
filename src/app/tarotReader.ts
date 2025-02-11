@@ -21,7 +21,7 @@ export class TarotReader {
         isReversed: boolean,
         position?: string
     }> {
-        let numberOfCards = spreadType === "yesno" ? 1 : 3; // Yes/No only needs 1 card
+        const numberOfCards = spreadType === "yesno" ? 1 : 3;
         const selected: Array<TarotCard & { isReversed: boolean, position?: string }> = [];
         const available = [...this.deck];
 
@@ -78,7 +78,7 @@ export class TarotReader {
         
         Do NOT explain the card, just give the answer and a one-liner explaining it.`;
         } else {
-            prompt = `${cards.map((card, index) => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`).join('\n')}
+            prompt = `${cards.map((card) => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`).join('\n')}
 
 You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
 
