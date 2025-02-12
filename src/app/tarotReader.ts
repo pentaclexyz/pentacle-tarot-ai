@@ -138,45 +138,46 @@ export class TarotReader {
     private async generateTarotImage(
         cards: Array<TarotCard & { isReversed: boolean; position?: string }>
     ): Promise<string> {
-        try {
-            const cardNames = cards
-                .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
-                .join(', ');
-
-            const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
-
-            const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.veniceApiKey}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: "flux-dev",
-                    height: 200,
-                    width: 600,
-                    safe_mode: true,
-                    prompt,
-                    style_preset: "Zentangle",
-                    "hide_watermark": true,
-                }),
-            });
-
-            if (!response.ok) {
-                return this.getFallbackImage();
-            }
-
-            const data = (await response.json()) as VeniceResponse;
-
-            if (!data.images?.[0]) {
-                return this.getFallbackImage();
-            }
-
-            return await this.uploadToCloudinary(data.images[0]);
-        } catch (error) {
-            console.error("Error generating image:", error);
-            return this.getFallbackImage();
-        }
+        // try {
+        //     const cardNames = cards
+        //         .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
+        //         .join(', ');
+        //
+        //     const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
+        //
+        //     const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Authorization': `Bearer ${this.veniceApiKey}`,
+        //             'Content-Type': 'application/json',
+        //         },
+        //         body: JSON.stringify({
+        //             model: "flux-dev",
+        //             height: 200,
+        //             width: 600,
+        //             safe_mode: true,
+        //             prompt,
+        //             style_preset: "Zentangle",
+        //             "hide_watermark": true,
+        //         }),
+        //     });
+        //
+        //     if (!response.ok) {
+        //         return this.getFallbackImage();
+        //     }
+        //
+        //     const data = (await response.json()) as VeniceResponse;
+        //
+        //     if (!data.images?.[0]) {
+        //         return this.getFallbackImage();
+        //     }
+        //
+        //     return await this.uploadToCloudinary(data.images[0]);
+        // } catch (error) {
+        //     console.error("Error generating image:", error);
+        //     return this.getFallbackImage();
+        // }
+        return this.getFallbackImage();
     }
 
     public async formatReading(
