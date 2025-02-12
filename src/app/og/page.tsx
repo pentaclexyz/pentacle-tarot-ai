@@ -37,7 +37,6 @@ export default function OgPage(props: any) {
         </head>
         <body>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <h1>Tarot Reading Image Preview</h1>
             {imageUrl ? (
                 <img
                     src={imageUrl}
