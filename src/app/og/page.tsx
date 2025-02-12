@@ -1,52 +1,59 @@
 import { Metadata } from 'next';
 
-interface OgPageProps {
-    searchParams: {
-        img?: string | string[];
-    };
-}
+export async function generateMetadata({
+                                           searchParams
+                                       }: {
+    searchParams: { img?: string }
+}): Promise<Metadata> {
+    const imageUrl = searchParams.img || '';
 
-/**
- * Dynamically generates Open Graph metadata based on the `img` query parameter.
- */
-export async function generateMetadata({ searchParams }: OgPageProps): Promise<Metadata> {
-    const imgParam = searchParams.img;
-    const imageUrl = typeof imgParam === 'string' ? decodeURIComponent(imgParam) : '';
     return {
         title: 'Tarot Reading Image',
         description: 'A tarot reading image generated for your query.',
         openGraph: {
             title: 'Tarot Reading Image',
             description: 'A tarot reading image generated for your query.',
-            images: imageUrl
-                ? [
-                    {
-                        url: imageUrl,
-                        width: 1200,
-                        height: 630,
-                        alt: 'Tarot Reading Image',
-                    },
-                ]
-                : [],
+            images: imageUrl ? [{
+                url: imageUrl,
+                width: 1200,
+                height: 630
+            }] : [],
         },
     };
 }
 
-/**
- * The component renders a preview of the dynamic image.
- * This page is scraped by Warpcast to retrieve OG meta tags.
- */
-export default function OgPage({ searchParams }: OgPageProps) {
-    const imgParam = searchParams.img;
-    const imageUrl = typeof imgParam === 'string' ? decodeURIComponent(imgParam) : '';
+export default function OgPage({
+                                   searchParams
+                               }: {
+    searchParams: { img?: string }
+}) {
+    const imageUrl = searchParams.img || '';
+
     return (
+        <html>
+        <head>
+            <title>Tarot Reading Image</title>
+            {imageUrl && (
+                <>
+                    <meta property="og:image" content={imageUrl} />
+                    <meta property="og:image:width" content="1200" />
+                    <meta property="og:image:height" content="630" />
+                </>
+            )}
+        </head>
+        <body>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <h1>Tarot Reading Image Preview</h1>
             {imageUrl ? (
-                <img src={imageUrl} alt="Tarot Reading" style={{ maxWidth: '100%', height: 'auto' }} />
+                <img
+                    src={imageUrl}
+                    alt="Tarot Reading"
+                    style={{ maxWidth: '100%', height: 'auto', maxHeight: '630px' }}
+                />
             ) : (
-                <p>No image provided.</p>
+                <p>No image available</p>
             )}
         </div>
+        </body>
+        </html>
     );
 }
