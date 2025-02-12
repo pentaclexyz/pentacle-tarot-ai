@@ -2,7 +2,6 @@ import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TarotService } from './tarotService';
-import { TarotResponse } from "@/types/tarot";
 
 interface Cast {
     hash: string;
