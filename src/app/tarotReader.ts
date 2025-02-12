@@ -157,7 +157,8 @@ export class TarotReader {
                     width: 600,
                     safe_mode: true,
                     prompt,
-                    style_preset: "Zentangle"
+                    style_preset: "Zentangle",
+                    "hide_watermark": true,
                 }),
             });
 
