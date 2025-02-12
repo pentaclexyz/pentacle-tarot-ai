@@ -2,6 +2,7 @@ import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TarotService } from './tarotService';
+import { TarotResponse } from "@/types/tarot";
 
 interface Cast {
     hash: string;
@@ -23,10 +24,6 @@ interface WebhookEvent {
     };
 }
 
-interface FetchFeedResponse {
-    casts: Cast[];
-}
-
 export class FarcasterIntegration extends TarotService {
     private client: NeynarAPIClient;
     private signerUuid: string;
@@ -39,6 +36,18 @@ export class FarcasterIntegration extends TarotService {
         this.signerUuid = signerUuid;
         this.processedCasts = new Set<string>();
         this.processedCastsFilePath = path.join(__dirname, 'processed_casts.json');
+        this.loadProcessedCasts();
+    }
+
+    private loadProcessedCasts() {
+        try {
+            if (fs.existsSync(this.processedCastsFilePath)) {
+                const data = fs.readFileSync(this.processedCastsFilePath, 'utf8');
+                this.processedCasts = new Set(JSON.parse(data));
+            }
+        } catch (error) {
+            console.error('Error loading processed casts:', error);
+        }
     }
 
     private saveProcessedCasts() {
@@ -53,7 +62,7 @@ export class FarcasterIntegration extends TarotService {
         }
     }
 
-    public async startPolling() {
+    public async startPolling(interval = 10000) {
         try {
             const status = await this.client.lookupSigner({ signerUuid: this.signerUuid });
             if (status.status !== 'approved') {
@@ -61,20 +70,16 @@ export class FarcasterIntegration extends TarotService {
             }
 
             await this.doPoll();
-
-            setInterval(() => {
-                this.doPoll().catch(error => {
-                    console.error('Polling error:', error);
-                });
-            }, 10000);
+            setInterval(() => this.doPoll().catch(console.error), interval);
         } catch (error) {
             console.error('Error starting polling:', error);
+            throw error; // Re-throw to allow caller to handle
         }
     }
 
     private async doPoll() {
         try {
-            const response: FetchFeedResponse = await this.client.fetchFeed({
+            const response = await this.client.fetchFeed({
                 feedType: 'filter',
                 filterType: 'channel_id',
                 channelId: 'tarot',
@@ -84,18 +89,12 @@ export class FarcasterIntegration extends TarotService {
             if (!response?.casts) return;
 
             for (const cast of response.casts) {
-                try {
-                    const castTime = new Date(cast.timestamp);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+                const castTime = new Date(cast.timestamp);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-                    if (castTime >= today && !this.processedCasts.has(cast.hash)) {
-                        await this.handleCast(cast);
-                        this.processedCasts.add(cast.hash);
-                        this.saveProcessedCasts();
-                    }
-                } catch (error) {
-                    console.error('Error processing cast:', error);
+                if (castTime >= today && !this.processedCasts.has(cast.hash)) {
+                    await this.handleCast(cast);
                 }
             }
         } catch (error) {
@@ -105,105 +104,68 @@ export class FarcasterIntegration extends TarotService {
 
     private async handleCast(cast: Cast) {
         try {
-            const castHash = cast.hash || 'unknown-hash';
+            const castHash = cast.hash;
             const text = cast.text.toLowerCase();
 
-            console.log('HANDLE CAST DETAILS', {
-                castHash,
-                text,
-                processedCasts: Array.from(this.processedCasts)
-            });
-
-            // Check if already processed or not a tarot request
             if (this.processedCasts.has(castHash) || !text.startsWith('@pentacle-tarot')) {
-                console.log('Skipping cast', {
-                    alreadyProcessed: this.processedCasts.has(castHash),
-                    isNotTarotRequest: !text.startsWith('@pentacle-tarot')
-                });
                 return;
             }
 
-            const response = await this.generateReading(text);
-            if (!response) return;
+            // Generate reading
+            const reading = await this.generateReading(text);
+            const response = typeof reading === 'string'
+                ? { text: reading, imageUrl: '' }
+                : reading;
+
+            // No need for OG URL wrapping - Farcaster will handle the image directly
+            const replyText = response.imageUrl
+                ? `${response.text}\n${response.imageUrl}`
+                : response.text;
 
             if (this.isTestMode) {
-                console.log('TEST MODE - Would send response:', response);
+                console.log('TEST MODE - Would send response:', replyText);
                 return;
             }
 
             await this.client.publishCast({
                 signerUuid: this.signerUuid,
-                text: response,
+                text: replyText,
                 parent: castHash,
                 channelId: 'tarot',
             });
 
-            console.log('CAST PUBLISHED SUCCESSFULLY');
+            this.processedCasts.add(castHash);
+            this.saveProcessedCasts();
 
-            // Prevent processed set from growing too large
+            // Cleanup old processed casts if needed
             if (this.processedCasts.size > 1000) {
-                this.processedCasts.clear();
+                const oldestCasts = Array.from(this.processedCasts).slice(0, 500);
+                oldestCasts.forEach(hash => this.processedCasts.delete(hash));
+                this.saveProcessedCasts();
             }
-
         } catch (error) {
-            console.error('COMPREHENSIVE ERROR in handleCast:', error);
+            console.error('Error handling cast:', error);
         }
     }
 
     public async handleWebhookEvent(event: WebhookEvent) {
-        try {
-            if (event.type !== 'cast.created') {
-                console.log('Ignoring event type:', event.type);
-                return;
-            }
+        if (event.type !== 'cast.created') return;
 
-            const cast = event.data;
-            const castHash = cast.hash || 'unknown-hash';
-            const castText = cast.text?.toLowerCase() || '';
+        const cast = {
+            hash: event.data.hash || 'unknown-hash',
+            text: event.data.text || '',
+            timestamp: event.data.timestamp || new Date().toISOString()
+        };
 
-            console.log('WEBHOOK EVENT DETAILS', {
-                castHash,
-                castText,
-                processedCasts: Array.from(this.processedCasts)
-            });
-
-            if (this.processedCasts.has(castHash) || !castText.startsWith('@pentacle-tarot')) {
-                console.log('Skipping webhook event', {
-                    alreadyProcessed: this.processedCasts.has(castHash),
-                    isNotTarotRequest: !castText.startsWith('@pentacle-tarot')
-                });
-                return;
-            }
-
-            this.processedCasts.add(castHash);
-
-            const response = await this.generateReading(castText);
-            if (!response) return;
-
-            await this.client.publishCast({
-                signerUuid: this.signerUuid,
-                text: response,
-                parent: castHash,
-                channelId: 'tarot',
-            });
-
-            console.log('WEBHOOK REPLY SENT SUCCESSFULLY');
-
-            if (this.processedCasts.size > 1000) {
-                this.processedCasts.clear();
-            }
-        } catch (error) {
-            console.error('Error handling webhook event:', error);
-        }
+        await this.handleCast(cast);
     }
 
+    // Test method for manual testing
     public async testReading(question: string) {
-        const testCast = {
+        await this.handleCast({
             hash: 'test-hash-' + Date.now(),
             text: question,
             timestamp: new Date().toISOString()
-        };
-
-        await this.handleCast(testCast);
+        });
     }
 }

@@ -26,14 +26,17 @@ export class TarotService {
             const cards = this.tarotReader.selectCards(spreadType);
             const response = await this.tarotReader.formatReading(question, cards, spreadType);
 
+            // If response is an object, extract its text property; if it's a string, use it directly.
+            const readingText = typeof response === 'string' ? response : response.text;
+
             console.log({
                 spreadType,
                 numberOfCards: cards.length,
-                responseLength: response.length,
-                responsePreview: response.substring(0, 200)
+                responseLength: readingText.length,
+                responsePreview: readingText.substring(0, 200)
             });
 
-            return response;
+            return readingText;
         } catch (error) {
             console.error('Error in tarot service:', error);
             throw error;

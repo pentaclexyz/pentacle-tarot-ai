@@ -14,5 +14,5 @@ export interface TarotCard {
 
 export interface TarotResponse {
     text: string;
-    images?: string[];
+    imageUrl?: string;
 }

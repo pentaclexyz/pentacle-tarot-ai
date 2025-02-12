@@ -2,12 +2,12 @@ import { TarotCard } from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
 import OpenAI from 'openai';
-
 import dotenv from 'dotenv';
-dotenv.config();
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary with explicit configuration
+dotenv.config();
+
+// Configure Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_KEY,
@@ -18,13 +18,19 @@ interface VeniceResponse {
     images: string[];
 }
 
+// Define an interface for the tarot reading response
+export interface TarotResponse {
+    text: string;
+    imageUrl?: string;
+}
+
 export class TarotReader {
     private deck = TAROT_CARDS;
     private openai: OpenAI;
     private veniceApiKey: string;
 
     constructor(openaiApiKey: string, veniceApiKey: string) {
-        this.openai = new OpenAI({ apiKey: openaiApiKey });
+        this.openai = new OpenAI({apiKey: openaiApiKey});
         this.veniceApiKey = veniceApiKey;
     }
 
@@ -80,7 +86,6 @@ export class TarotReader {
             const apiSecret = process.env.CLOUDINARY_SECRET;
 
             console.log('Cloudinary config:', cloudinary.config());
-
             console.log('Cloudinary Upload Debug:', {
                 cloudName: cloudName ? 'PRESENT' : 'MISSING',
                 apiKey: apiKey ? 'PRESENT' : 'MISSING',
@@ -172,25 +177,23 @@ export class TarotReader {
         question: string,
         cards: Array<TarotCard & { isReversed: boolean; position?: string }>,
         spreadType: "love" | "career" | "yesno" | "past-present-future"
-    ): Promise<string> {
-        const cardsHeader = cards
-            .map(card => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
-            .join(' ┆ ');
+    ): Promise<TarotResponse> {
+        try {
+            const cardsHeader = cards
+                .map(card => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
+                .join(' ┆ ');
 
-        let prompt = "";
-        let interpretation = "";
+            let interpretation = "";
 
-        // Generate the text response based on the spread type
-        if (spreadType === "yesno") {
-            const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
-            prompt = `You are a punk tarot reader. Give a **bold, direct** one-line response to a yes/no question based on this card. The answer is "${yesNoAnswer}".  
-
-Do NOT explain the card, just give the answer and a one-liner explaining it.`;
-            interpretation = `${yesNoAnswer}: ${cards[0].summary}`;
-        } else {
-            prompt = `${cards
-                .map(card => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`)
-                .join('\n')}
+            // Handle yes/no spread
+            if (spreadType === "yesno") {
+                const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
+                interpretation = `${yesNoAnswer}: ${cards[0].summary}`;
+            } else {
+                // Build the prompt for a full reading
+                const prompt = `${cards
+                    .map(card => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`)
+                    .join('\n')}
 
 You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
 
@@ -207,14 +210,12 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
   - **Make it sound like real advice, not AI-generated.**
   - **Use hedging language** ("possible," "may," or "could") for future outcomes.
   - **Strictly limit to 3 sentences.**  
-  - **Final sentence must be fully complete.**
-    - **Final sentence must always fully complete—no cut-offs**  
+  - **Final sentence must be fully complete—no cut-offs.**
   - **Write the summary in a natural way—avoid repetitive phrasing.**
   - **It must still clearly address the querent's question.**
 
 **User's Question:** "${question}"`;
 
-            try {
                 const completion = await this.openai.chat.completions.create({
                     model: "gpt-4",
                     messages: [
@@ -236,23 +237,21 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
                 if (!interpretation) {
                     throw new Error("Received null response from GPT-4");
                 }
-            } catch (error) {
-                console.error("Error generating reading:", error);
-                throw new Error("Failed to generate tarot reading");
             }
-        }
 
-        try {
-            // Generate the image (Cloudinary now returns the PNG URL)
+            // Generate image and return
             const imageUrl = await this.generateTarotImage(cards);
-
-            // Return a Markdown-formatted response with the image
-            const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}\n\n![Tarot Vision](${imageUrl})`;
-            return unifiedReply;
+            return {
+                text: `${cardsHeader}\n\n${interpretation.trim()}`,
+                imageUrl
+            };
         } catch (error) {
-            console.error("Error generating image:", error);
-            // If image generation fails, return just the text response
-            return `${cardsHeader}\n\n${interpretation.trim()}`;
+            console.error("Error in formatReading:", error);
+            // Even in case of error, return a valid TarotResponse
+            return {
+                text: "I apologize, but I encountered an error while generating your reading. Please try again.",
+                imageUrl: undefined
+            };
         }
     }
 }
