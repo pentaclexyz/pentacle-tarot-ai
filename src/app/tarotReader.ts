@@ -2,13 +2,16 @@ import { TarotCard } from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
 import OpenAI from 'openai';
+
+import dotenv from 'dotenv';
+dotenv.config();
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary with explicit configuration
 cloudinary.config({
-    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.NEXT_PUBLIC_CLOUDINARY_KEY,
-    api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_KEY,
+    api_secret: process.env.CLOUDINARY_SECRET
 });
 
 interface VeniceResponse {
@@ -21,7 +24,7 @@ export class TarotReader {
     private veniceApiKey: string;
 
     constructor(openaiApiKey: string, veniceApiKey: string) {
-        this.openai = new OpenAI({apiKey: openaiApiKey});
+        this.openai = new OpenAI({ apiKey: openaiApiKey });
         this.veniceApiKey = veniceApiKey;
     }
 
@@ -29,12 +32,11 @@ export class TarotReader {
         return crypto.randomBytes(4).readUInt32LE() / 0xFFFFFFFF;
     }
 
-    selectCards(spreadType: "love" | "career" | "yesno" | "past-present-future"): Array<TarotCard & {
-        isReversed: boolean,
-        position?: string
-    }> {
+    selectCards(
+        spreadType: "love" | "career" | "yesno" | "past-present-future"
+    ): Array<TarotCard & { isReversed: boolean; position?: string }> {
         const numberOfCards = spreadType === "yesno" ? 1 : 3;
-        const selected: Array<TarotCard & { isReversed: boolean, position?: string }> = [];
+        const selected: Array<TarotCard & { isReversed: boolean; position?: string }> = [];
         const available = [...this.deck];
 
         const spreadPositions: Record<string, string[]> = {
@@ -73,9 +75,11 @@ export class TarotReader {
 
     private async uploadToCloudinary(base64Image: string): Promise<string> {
         return new Promise((resolve, reject) => {
-            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-            const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_KEY;
-            const apiSecret = process.env.NEXT_PUBLIC_CLOUDINARY_SECRET;
+            const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+            const apiKey = process.env.CLOUDINARY_KEY;
+            const apiSecret = process.env.CLOUDINARY_SECRET;
+
+            console.log('Cloudinary config:', cloudinary.config());
 
             console.log('Cloudinary Upload Debug:', {
                 cloudName: cloudName ? 'PRESENT' : 'MISSING',
@@ -87,18 +91,19 @@ export class TarotReader {
                 return reject(new Error('Incomplete Cloudinary configuration'));
             }
 
-            // Remove the data URL prefix if it exists
+            // Remove any data URL prefix if it exists
             const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
             cloudinary.uploader.upload(
                 `data:image/png;base64,${base64Data}`,
                 {
                     folder: 'tarot-readings',
-                    transformation: [
-                        { width: 600, crop: "scale" },
-                        { quality: "auto" },
-                        { fetch_format: "auto" }
-                    ],
+                    transformation: {
+                        width: 600,
+                        crop: "scale",
+                        format: "png",    // Force PNG conversion
+                        quality: "auto"
+                    },
                     overwrite: true,
                     unique_filename: true
                 },
@@ -118,8 +123,12 @@ export class TarotReader {
         });
     }
 
-    private async generateTarotImage(cards: Array<TarotCard & { isReversed: boolean, position?: string }>): Promise<string> {
-        const cardNames = cards.map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`).join(', ');
+    private async generateTarotImage(
+        cards: Array<TarotCard & { isReversed: boolean; position?: string }>
+    ): Promise<string> {
+        const cardNames = cards
+            .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
+            .join(', ');
 
         const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://s.mj.run/0LLFDv6GwFw`;
 
@@ -144,10 +153,10 @@ export class TarotReader {
                 throw new Error(`Venice API error: ${response.statusText}`);
             }
 
-            const data = await response.json() as VeniceResponse;
+            const data = (await response.json()) as VeniceResponse;
 
             if (data && data.images && data.images[0]) {
-                // Upload the base64 image to Cloudinary and get back a URL
+                // Upload the returned base64 image to Cloudinary and get a PNG URL
                 const imageUrl = await this.uploadToCloudinary(data.images[0]);
                 return imageUrl;
             }
@@ -161,25 +170,27 @@ export class TarotReader {
 
     public async formatReading(
         question: string,
-        cards: Array<TarotCard & { isReversed: boolean, position?: string }>,
+        cards: Array<TarotCard & { isReversed: boolean; position?: string }>,
         spreadType: "love" | "career" | "yesno" | "past-present-future"
     ): Promise<string> {
-        const cardsHeader = `${cards
-            .map((card) => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
-            .join(' ┆ ')}`;
+        const cardsHeader = cards
+            .map(card => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
+            .join(' ┆ ');
 
         let prompt = "";
         let interpretation = "";
 
-        // Generate the normal text response
+        // Generate the text response based on the spread type
         if (spreadType === "yesno") {
             const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
             prompt = `You are a punk tarot reader. Give a **bold, direct** one-line response to a yes/no question based on this card. The answer is "${yesNoAnswer}".  
-        
-            Do NOT explain the card, just give the answer and a one-liner explaining it.`;
+
+Do NOT explain the card, just give the answer and a one-liner explaining it.`;
             interpretation = `${yesNoAnswer}: ${cards[0].summary}`;
         } else {
-            prompt = `${cards.map((card) => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`).join('\n')}
+            prompt = `${cards
+                .map(card => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`)
+                .join('\n')}
 
 You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
 
@@ -199,7 +210,6 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
   - **Final sentence must be fully complete.**
     - **Final sentence must always fully complete—no cut-offs**  
   - **Write the summary in a natural way—avoid repetitive phrasing.**
-  - **Make sure it sounds conversational, not formulaic.**
   - **It must still clearly address the querent's question.**
 
 **User's Question:** "${question}"`;
@@ -210,7 +220,8 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
                     messages: [
                         {
                             role: "system",
-                            content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
+                            content:
+                                "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
                         },
                         {
                             role: "user",
@@ -218,7 +229,7 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
                         }
                     ],
                     temperature: 0.7,
-                    max_tokens: 150,
+                    max_tokens: 150
                 });
 
                 interpretation = completion.choices[0].message.content || "";
@@ -232,11 +243,10 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
         }
 
         try {
-            // Generate the image in parallel with the text
-            const imageData = await this.generateTarotImage(cards);
-            const imageUrl = imageData.startsWith('data:image') ? imageData : `data:image/png;base64,${imageData}`;
+            // Generate the image (Cloudinary now returns the PNG URL)
+            const imageUrl = await this.generateTarotImage(cards);
 
-            // Return a markdown-formatted response with the image
+            // Return a Markdown-formatted response with the image
             const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}\n\n![Tarot Vision](${imageUrl})`;
             return unifiedReply;
         } catch (error) {
