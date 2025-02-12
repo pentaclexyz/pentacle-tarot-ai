@@ -14,9 +14,9 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_SECRET
 });
 
-interface VeniceResponse {
-    images: string[];
-}
+// interface VeniceResponse {
+//     images: string[];
+// }
 
 // Define an interface for the tarot reading response
 export interface TarotResponse {
@@ -119,6 +119,7 @@ export class TarotReader {
     }
 
     private async generateTarotImage(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         cards: Array<TarotCard & { isReversed: boolean; position?: string }>
     ): Promise<string> {
         try {
