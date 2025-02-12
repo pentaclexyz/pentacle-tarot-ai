@@ -116,9 +116,12 @@ export class FarcasterIntegration extends TarotService {
                 ? { text: reading, imageUrl: '' }
                 : reading;
 
-            // Put image URL on its own line for proper Farcaster embedding
+            const ogUrl = response.imageUrl
+                ? `${process.env.NEXT_PUBLIC_APP_URL}/og?img=${encodeURIComponent(response.imageUrl)}`
+                : '';
+
             const replyText = response.imageUrl
-                ? `${response.text}\n\n<img src="${response.imageUrl}" alt="Tarot reading spread" />`
+                ? `${response.text}\n\n${ogUrl}`
                 : response.text;
 
             if (this.isTestMode) {
