@@ -11,8 +11,6 @@ export async function generateMetadata({
         title: 'Tarot Reading Image',
         description: 'A tarot reading image generated for your query.',
         openGraph: {
-            title: 'Tarot Reading Image',
-            description: 'A tarot reading image generated for your query.',
             images: imageUrl ? [{
                 url: imageUrl,
                 width: 1200,
@@ -22,12 +20,8 @@ export async function generateMetadata({
     };
 }
 
-export default function OgPage({
-                                   searchParams
-                               }: {
-    searchParams: { img?: string }
-}) {
-    const imageUrl = searchParams.img || '';
+export default function OgPage(props: any) {
+    const imageUrl = props.searchParams?.img || '';
 
     return (
         <html>
@@ -43,6 +37,7 @@ export default function OgPage({
         </head>
         <body>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <h1>Tarot Reading Image Preview</h1>
             {imageUrl ? (
                 <img
                     src={imageUrl}
