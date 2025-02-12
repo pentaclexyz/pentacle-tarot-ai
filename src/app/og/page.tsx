@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 export async function generateMetadata({
                                            searchParams
                                        }: {
-    searchParams: { img?: string }
+    searchParams: { img?: string } & Promise<{ img?: string }>
 }): Promise<Metadata> {
     const imageUrl = searchParams.img || '';
 
@@ -20,8 +20,8 @@ export async function generateMetadata({
     };
 }
 
-export default function OgPage(props: any) {
-    const imageUrl = props.searchParams?.img || '';
+export default function OgPage({ searchParams }: { searchParams: { img?: string } & Promise<{ img?: string }> }) {
+    const imageUrl = searchParams.img || '';
 
     return (
         <html>
