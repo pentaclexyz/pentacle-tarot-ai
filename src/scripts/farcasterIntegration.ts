@@ -117,9 +117,9 @@ export class FarcasterIntegration extends TarotService {
                 ? { text: reading, imageUrl: '' }
                 : reading;
 
-            // No need for OG URL wrapping - Farcaster will handle the image directly
+            // Put image URL on its own line for proper Farcaster embedding
             const replyText = response.imageUrl
-                ? `${response.text}\n${response.imageUrl}`
+                ? `${response.text}\n\n${response.imageUrl}` // Double newline for clean separation
                 : response.text;
 
             if (this.isTestMode) {
