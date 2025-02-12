@@ -1,39 +1,42 @@
 import { TarotReader } from '../app/tarotReader';
 
 export class TarotService {
-    protected tarotReader: TarotReader;
+    private tarotReader: TarotReader;
     protected isTestMode: boolean;
-    protected lastProcessedTime: number = 0;
-    protected processingDelay: number = 2000; // 2 seconds
 
     constructor(isTestMode = false) {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('Missing OPENAI_API_KEY environment variable');
-        }
-        this.tarotReader = new TarotReader(process.env.OPENAI_API_KEY);
         this.isTestMode = isTestMode;
+
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is required');
+        }
+        if (!process.env.VENICEAI_API_KEY) {
+            throw new Error('VENICEAI_API_KEY environment variable is required');
+        }
+
+        this.tarotReader = new TarotReader(
+            process.env.OPENAI_API_KEY,
+            process.env.VENICEAI_API_KEY
+        );
     }
 
-    public async generateReading(question: string): Promise<string> {
-        // Rate limiting
-        const now = Date.now();
-        if (now - this.lastProcessedTime < this.processingDelay) {
-            console.log('RATE LIMIT TRIGGERED');
-            return '';
+    protected async generateReading(question: string): Promise<string> {
+        try {
+            const spreadType = this.tarotReader.determineSpreadType(question);
+            const cards = this.tarotReader.selectCards(spreadType);
+            const response = await this.tarotReader.formatReading(question, cards, spreadType);
+
+            console.log({
+                spreadType,
+                numberOfCards: cards.length,
+                responseLength: response.length,
+                responsePreview: response.substring(0, 200)
+            });
+
+            return response;
+        } catch (error) {
+            console.error('Error in tarot service:', error);
+            throw error;
         }
-        this.lastProcessedTime = now;
-
-        console.log('🔮 Processing reading request:', question);
-
-        const spreadType = this.tarotReader.determineSpreadType(question);
-        const cards = this.tarotReader.selectCards(spreadType);
-        const response = await this.tarotReader.formatReading(question, cards, spreadType);
-
-        console.log('GENERATED RESPONSE', {
-            responseLength: response.length,
-            responsePreview: response.substring(0, 200)
-        });
-
-        return response;
     }
 }

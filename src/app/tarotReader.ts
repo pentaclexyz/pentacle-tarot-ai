@@ -1,16 +1,20 @@
-// tarotReader
-
 import { TarotCard } from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
 import OpenAI from 'openai';
 
+interface VeniceResponse {
+    images: string[];
+}
+
 export class TarotReader {
     private deck = TAROT_CARDS;
     private openai: OpenAI;
+    private veniceApiKey: string;
 
-    constructor(openaiApiKey: string) {
+    constructor(openaiApiKey: string, veniceApiKey: string) {
         this.openai = new OpenAI({apiKey: openaiApiKey});
+        this.veniceApiKey = veniceApiKey;
     }
 
     private secureRandom(): number {
@@ -44,7 +48,6 @@ export class TarotReader {
         return selected;
     }
 
-
     determineSpreadType(question: string): "love" | "career" | "yesno" | "past-present-future" {
         const lowerQuestion = question.toLowerCase();
 
@@ -60,8 +63,76 @@ export class TarotReader {
         return "past-present-future"; // Default spread
     }
 
+    private async generateTarotImage(cards: Array<TarotCard & { isReversed: boolean, position?: string }>): Promise<string> {
+        const cardNames = cards.map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`).join(', ');
 
-    async formatReading(
+        const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://s.mj.run/0LLFDv6GwFw`;
+
+        try {
+            const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.veniceApiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: "flux-dev",
+                    height: 200,
+                    width: 600,
+                    safe_mode: true,
+                    prompt,
+                    style_preset: "Zentangle"
+                }),
+            });
+
+        private async generateTarotImage(cards: Array<TarotCard & { isReversed: boolean, position?: string }>): Promise<string> {
+                const cardNames = cards.map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`).join(', ');
+
+                const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://s.mj.run/0LLFDv6GwFw`;
+
+                try {
+                    const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.veniceApiKey}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            model: "flux-dev",
+                            height: 200,
+                            width: 600,
+                            safe_mode: true,
+                            prompt,
+                            style_preset: "Zentangle"
+                        }),
+                    });
+
+                    if (!response.ok) {
+                throw new Error(`Venice API error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data && data.images && data.images[0]) {
+                // Upload the base64 image to Cloudinary and get back a URL
+                const imageUrl = await this.uploadToCloudinary(data.images[0]);
+                return imageUrl;
+            }
+
+            throw new Error('Unexpected response format from Venice API');
+        } catch (error) {
+                console.error("Error generating image:", error);
+                throw new Error("Failed to generate tarot image");
+            }
+        }
+
+        } catch (error) {
+            console.error("Error generating image:", error);
+            throw new Error("Failed to generate tarot image");
+        }
+    }
+
+    public async formatReading(
         question: string,
         cards: Array<TarotCard & { isReversed: boolean, position?: string }>,
         spreadType: "love" | "career" | "yesno" | "past-present-future"
@@ -71,12 +142,15 @@ export class TarotReader {
             .join(' ┆ ')}`;
 
         let prompt = "";
+        let interpretation = "";
 
+        // Generate the normal text response
         if (spreadType === "yesno") {
             const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
             prompt = `You are a punk tarot reader. Give a **bold, direct** one-line response to a yes/no question based on this card. The answer is "${yesNoAnswer}".  
         
-        Do NOT explain the card, just give the answer and a one-liner explaining it.`;
+            Do NOT explain the card, just give the answer and a one-liner explaining it.`;
+            interpretation = `${yesNoAnswer}: ${cards[0].summary}`;
         } else {
             prompt = `${cards.map((card) => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`).join('\n')}
 
@@ -90,7 +164,7 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
   4. **Do not add a full stop** at the end of any of these lines.
 
 - **Final Summary:**
-  - Weave in the querent’s **exact question** (without "@pentacle-tarot").
+  - Weave in the querent's **exact question** (without "@pentacle-tarot").
   - **Never change, reinterpret, or invent** a different question.
   - **Make it sound like real advice, not AI-generated.**
   - **Use hedging language** ("possible," "may," or "could") for future outcomes.
@@ -99,11 +173,9 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
     - **Final sentence must always fully complete—no cut-offs**  
   - **Write the summary in a natural way—avoid repetitive phrasing.**
   - **Make sure it sounds conversational, not formulaic.**
-  - **It must still clearly address the querent’s question.**
+  - **It must still clearly address the querent's question.**
 
-**User's Question:** "${question}"
-
-Do not include any additional text, headers, or labels. Just the reading.`;
+**User's Question:** "${question}"`;
 
             try {
                 const completion = await this.openai.chat.completions.create({
@@ -122,18 +194,28 @@ Do not include any additional text, headers, or labels. Just the reading.`;
                     max_tokens: 150,
                 });
 
-                const interpretation = completion.choices[0].message.content;
+                interpretation = completion.choices[0].message.content || "";
                 if (!interpretation) {
                     throw new Error("Received null response from GPT-4");
                 }
-
-                const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}`;
-                return unifiedReply;
             } catch (error) {
                 console.error("Error generating reading:", error);
                 throw new Error("Failed to generate tarot reading");
             }
         }
-        return "✧ Error: No valid tarot reading could be generated.";
+
+        try {
+            // Generate the image in parallel with the text
+            const imageData = await this.generateTarotImage(cards);
+            const imageUrl = imageData.startsWith('data:image') ? imageData : `data:image/png;base64,${imageData}`;
+
+            // Return a markdown-formatted response with the image
+            const unifiedReply = `${cardsHeader}\n\n${interpretation.trim()}\n\n![Tarot Vision](${imageUrl})`;
+            return unifiedReply;
+        } catch (error) {
+            console.error("Error generating image:", error);
+            // If image generation fails, return just the text response
+            return `${cardsHeader}\n\n${interpretation.trim()}`;
+        }
     }
 }
