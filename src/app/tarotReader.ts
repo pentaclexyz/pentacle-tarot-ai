@@ -146,7 +146,7 @@ export class TarotReader {
                 },
                 body: JSON.stringify({
                     model: "flux-dev",
-                    height: 200,
+                    height: 300,
                     width: 600,
                     safe_mode: true,
                     prompt,
