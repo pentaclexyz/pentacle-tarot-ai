@@ -1,7 +1,6 @@
-// src/scripts/twitterIntegration.ts
-
 import { TwitterApi } from 'twitter-api-v2';
 import { TarotReader } from '../app/tarotReader';
+import { TarotResponse } from '@/types/tarot';
 
 interface TwitterMention {
     id: string;
@@ -10,16 +9,13 @@ interface TwitterMention {
 }
 
 export class TwitterIntegration {
-    // Client for write operations (OAuth 1.0a)
     private client: TwitterApi;
-    // Client for streaming (OAuth 2.0 Bearer Token)
     private streamingClient: TwitterApi;
     private tarotReader: TarotReader;
     private processedTweets: Set<string> = new Set();
     private isTestMode: boolean;
 
     constructor(isTestMode = false) {
-        // Validate required environment variables
         const requiredEnvVars = [
             'TWITTER_API_KEY',
             'TWITTER_API_SECRET',
@@ -41,7 +37,6 @@ export class TwitterIntegration {
             accessSecret: process.env.TWITTER_ACCESS_SECRET as string,
         });
 
-        // Initialize the streaming client using the Bearer Token (OAuth 2.0)
         this.streamingClient = new TwitterApi(process.env.TWITTER_BEARER_TOKEN as string);
 
         this.tarotReader = new TarotReader(
@@ -50,6 +45,15 @@ export class TwitterIntegration {
         );
 
         this.isTestMode = isTestMode;
+    }
+
+    private formatResponseForTweet(response: TarotResponse): string {
+        if (!response.text) return '';
+
+        // Format tweet with image URL on a new line if present
+        return response.imageUrl
+            ? `${response.text}\n\n${response.imageUrl}`
+            : response.text;
     }
 
     async tweet(message: string): Promise<boolean> {
@@ -70,36 +74,36 @@ export class TwitterIntegration {
         try {
             if (this.processedTweets.has(mention.id)) {
                 console.log('Already processed tweet:', mention.id);
-                return ''; // Prevents double processing
+                return '';
             }
             this.processedTweets.add(mention.id);
 
-            const spreadType = this.tarotReader.determineSpreadType(mention.text); // Get correct spread
-            const cards = this.tarotReader.selectCards(spreadType); // Use spread type
-            const response = await this.tarotReader.formatReading(mention.text, cards, spreadType); // Pass spread type
+            const spreadType = this.tarotReader.determineSpreadType(mention.text);
+            const cards = this.tarotReader.selectCards(spreadType);
+            const response = await this.tarotReader.formatReading(mention.text, cards, spreadType);
 
-
-            if (!response) {
+            if (!response || !response.text) {
                 console.log("Generated response is empty.");
-                return ''; // Ensure a string is always returned
+                return '';
             }
 
             console.log('Generated reading:', response);
 
+            const tweetText = this.formatResponseForTweet(response);
+
             if (!this.isTestMode) {
-                await this.client.v2.reply(response, mention.id);
+                await this.client.v2.reply(tweetText, mention.id);
                 console.log('Successfully replied to tweet:', mention.id);
             } else {
-                console.log(`TEST MODE - Would reply: ${response}`);
+                console.log(`TEST MODE - Would reply: ${tweetText}`);
             }
 
-            return response; // ✅ Ensure this is returned
+            return tweetText;
         } catch (error) {
             console.error('Error handling mention:', error);
-            return ''; // Always return a string
+            return '';
         }
     }
-
 
     async startListening(): Promise<void> {
         if (this.isTestMode) {
@@ -107,22 +111,18 @@ export class TwitterIntegration {
             return;
         }
         try {
-            // Verify basic connectivity
             const me = await this.streamingClient.v2.me();
             console.log('Authenticated User:', me.data.username);
 
-            // Get existing rules
             const existingRules = await this.streamingClient.v2.streamRules();
             console.log('Existing Rules:', JSON.stringify(existingRules, null, 2));
 
-            // Remove existing rules
             if (existingRules.data?.length) {
                 await this.streamingClient.v2.updateStreamRules({
                     delete: { ids: existingRules.data.map(rule => rule.id) }
                 });
             }
 
-            // Add new rule
             const ruleResponse = await this.streamingClient.v2.updateStreamRules({
                 add: [{
                     value: `to:pentacletarot`,
@@ -157,5 +157,4 @@ export class TwitterIntegration {
             throw error;
         }
     }
-
 }
