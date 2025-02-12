@@ -135,7 +135,7 @@ export class TarotReader {
             .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
             .join(', ');
 
-        const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://s.mj.run/0LLFDv6GwFw`;
+        const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://raw.githubusercontent.com/pentaclexyz/images/refs/heads/main/pentacle_japanese_anime_girl_mystic_american_1960s_style_ink_ca_a60a2797-a7a1-4b26-9bc9-685e2374ef9d.png`;
 
         try {
             const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
