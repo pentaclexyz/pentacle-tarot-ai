@@ -44,7 +44,11 @@ export class TwitterIntegration {
         // Initialize the streaming client using the Bearer Token (OAuth 2.0)
         this.streamingClient = new TwitterApi(process.env.TWITTER_BEARER_TOKEN as string);
 
-        this.tarotReader = new TarotReader(process.env.OPENAI_API_KEY as string);
+        this.tarotReader = new TarotReader(
+            process.env.OPENAI_API_KEY as string,
+            process.env.VENICE_API_KEY as string
+        );
+
         this.isTestMode = isTestMode;
     }
 
