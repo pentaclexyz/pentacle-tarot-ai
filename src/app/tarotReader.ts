@@ -2,6 +2,14 @@ import { TarotCard } from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
 import OpenAI from 'openai';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary with explicit configuration
+cloudinary.config({
+    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.NEXT_PUBLIC_CLOUDINARY_KEY,
+    api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_SECRET
+});
 
 interface VeniceResponse {
     images: string[];
@@ -63,6 +71,53 @@ export class TarotReader {
         return "past-present-future"; // Default spread
     }
 
+    private async uploadToCloudinary(base64Image: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+            const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_KEY;
+            const apiSecret = process.env.NEXT_PUBLIC_CLOUDINARY_SECRET;
+
+            console.log('Cloudinary Upload Debug:', {
+                cloudName: cloudName ? 'PRESENT' : 'MISSING',
+                apiKey: apiKey ? 'PRESENT' : 'MISSING',
+                apiSecret: apiSecret ? 'PRESENT' : 'MISSING'
+            });
+
+            if (!cloudName || !apiKey || !apiSecret) {
+                return reject(new Error('Incomplete Cloudinary configuration'));
+            }
+
+            // Remove the data URL prefix if it exists
+            const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+
+            cloudinary.uploader.upload(
+                `data:image/png;base64,${base64Data}`,
+                {
+                    folder: 'tarot-readings',
+                    transformation: [
+                        { width: 600, crop: "scale" },
+                        { quality: "auto" },
+                        { fetch_format: "auto" }
+                    ],
+                    overwrite: true,
+                    unique_filename: true
+                },
+                (error, result) => {
+                    if (error) {
+                        console.error('Detailed Cloudinary upload error:', error);
+                        reject(new Error(`Failed to upload image to Cloudinary: ${error.message}`));
+                    } else {
+                        console.log('Cloudinary upload successful:', {
+                            url: result?.secure_url,
+                            publicId: result?.public_id
+                        });
+                        resolve(result?.secure_url || '');
+                    }
+                }
+            );
+        });
+    }
+
     private async generateTarotImage(cards: Array<TarotCard & { isReversed: boolean, position?: string }>): Promise<string> {
         const cardNames = cards.map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`).join(', ');
 
@@ -85,33 +140,11 @@ export class TarotReader {
                 }),
             });
 
-        private async generateTarotImage(cards: Array<TarotCard & { isReversed: boolean, position?: string }>): Promise<string> {
-                const cardNames = cards.map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`).join(', ');
-
-                const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://s.mj.run/0LLFDv6GwFw`;
-
-                try {
-                    const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${this.veniceApiKey}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            model: "flux-dev",
-                            height: 200,
-                            width: 600,
-                            safe_mode: true,
-                            prompt,
-                            style_preset: "Zentangle"
-                        }),
-                    });
-
-                    if (!response.ok) {
+            if (!response.ok) {
                 throw new Error(`Venice API error: ${response.statusText}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as VeniceResponse;
 
             if (data && data.images && data.images[0]) {
                 // Upload the base64 image to Cloudinary and get back a URL
@@ -120,12 +153,6 @@ export class TarotReader {
             }
 
             throw new Error('Unexpected response format from Venice API');
-        } catch (error) {
-                console.error("Error generating image:", error);
-                throw new Error("Failed to generate tarot image");
-            }
-        }
-
         } catch (error) {
             console.error("Error generating image:", error);
             throw new Error("Failed to generate tarot image");

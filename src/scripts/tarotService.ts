@@ -10,13 +10,13 @@ export class TarotService {
         if (!process.env.OPENAI_API_KEY) {
             throw new Error('OPENAI_API_KEY environment variable is required');
         }
-        if (!process.env.VENICEAI_API_KEY) {
-            throw new Error('VENICEAI_API_KEY environment variable is required');
+        if (!process.env.VENICE_API_KEY) {
+            throw new Error('VENICE_API_KEY environment variable is required');
         }
 
         this.tarotReader = new TarotReader(
             process.env.OPENAI_API_KEY,
-            process.env.VENICEAI_API_KEY
+            process.env.VENICE_API_KEY
         );
     }
 
