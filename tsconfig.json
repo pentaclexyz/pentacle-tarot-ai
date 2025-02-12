@@ -7,8 +7,8 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "esnext",           // Changed from commonjs to esnext for better Next.js compatibility
+    "moduleResolution": "bundler", // Changed from node to bundler for better package resolution
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -19,9 +19,18 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "lodash/*": ["./node_modules/lodash/*"] // Added explicit lodash path mapping
+    },
+    "baseUrl": ".",              // Added explicit baseUrl
+    "allowImportingTsExtensions": true, // Added for better TypeScript module resolution
+    "forceConsistentCasingInFileNames": true // Added for better cross-platform compatibility
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

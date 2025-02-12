@@ -1,25 +1,44 @@
 import path from 'path';
 import { Configuration } from 'webpack';
+import { NextConfig } from 'next';
 
-const nextConfig = {
-    webpack: (config: Configuration) => {
-        // Ensure config.resolve and config.resolve.alias exist
-        config.resolve = config.resolve || {};
-        const alias = (config.resolve.alias as { [key: string]: string }) || {};
+const nextConfig: NextConfig = {
+    webpack: (config: Configuration, { isServer }) => {
+        if (!config.resolve) {
+            config.resolve = {};
+        }
 
-        // Explicitly alias lodash submodules that Cloudinary (or lodash itself) is trying to import
-        alias['lodash/compact'] = path.resolve(__dirname, 'node_modules/lodash/compact.js');
-        alias['lodash/at'] = path.resolve(__dirname, 'node_modules/lodash/at.js');
-        alias['lodash/clone'] = path.resolve(__dirname, 'node_modules/lodash/clone.js');
-        alias['lodash/extend'] = path.resolve(__dirname, 'node_modules/lodash/extend.js');
-        alias['lodash/filter'] = path.resolve(__dirname, 'node_modules/lodash/filter.js');
+        if (!config.resolve.alias) {
+            config.resolve.alias = {};
+        }
 
-        // These are the internal dependencies referenced inside some lodash files:
-        alias['lodash/assignIn'] = path.resolve(__dirname, 'node_modules/lodash/assignIn.js');
-        alias['lodash/_arrayFilter'] = path.resolve(__dirname, 'node_modules/lodash/_arrayFilter.js');
+        // Helper function to create path to lodash modules
+        const getLodashPath = (module: string) => path.resolve(process.cwd(), `node_modules/lodash/${module}`);
 
-        // Reassign the alias back to the config
-        config.resolve.alias = alias;
+        // Map of all required lodash modules
+        const lodashModules = {
+            'lodash/compact': 'compact',
+            'lodash/at': 'at',
+            'lodash/clone': 'clone',
+            'lodash/extend': 'extend',
+            'lodash/filter': 'filter',
+            'lodash/assignIn': 'assignIn',
+            'lodash/_arrayFilter': '_arrayFilter',
+        };
+
+        // Type assertion to handle the alias object type
+        const alias = config.resolve.alias as Record<string, string>;
+
+        // Create aliases for all lodash modules
+        Object.entries(lodashModules).forEach(([aliasKey, module]) => {
+            alias[aliasKey] = getLodashPath(module + '.js');
+        });
+
+        // If you're using ECMAScript modules
+        if (isServer) {
+            config.resolve.mainFields = ['module', 'main'];
+        }
+
         return config;
     },
 };
