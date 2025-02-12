@@ -115,7 +115,7 @@ export class TarotReader {
     private getFallbackImage(): string {
         const imageNumber = Math.floor(Math.random() * 3) + 1;
         const imageNumberPadded = imageNumber.toString().padStart(2, '0');
-        return `${process.env.NEXT_PUBLIC_APP_URL}/tarot/reading-${imageNumberPadded}.png`;
+        return `${process.env.CLOUDINARY_URL}/tarot/reading-${imageNumberPadded}`;
     }
 
     private async generateTarotImage(
