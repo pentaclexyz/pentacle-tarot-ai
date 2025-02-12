@@ -20,7 +20,7 @@ export class TarotService {
         );
     }
 
-    protected async generateReading(question: string): Promise<string> {
+    protected async generateReading(question: string): Promise<{ text: string, imageUrl?: string }> {
         try {
             const spreadType = this.tarotReader.determineSpreadType(question);
             const cards = this.tarotReader.selectCards(spreadType);
@@ -33,10 +33,14 @@ export class TarotService {
                 spreadType,
                 numberOfCards: cards.length,
                 responseLength: readingText.length,
-                responsePreview: readingText.substring(0, 200)
+                responsePreview: readingText.substring(0, 200),
+                imageUrl: response.imageUrl
             });
 
-            return readingText;
+            return {
+                text: readingText,
+                imageUrl: response.imageUrl
+            };
         } catch (error) {
             console.error('Error in tarot service:', error);
             throw error;
