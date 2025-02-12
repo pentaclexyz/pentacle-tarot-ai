@@ -27,7 +27,8 @@
     "openai": "^4.83.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "twitter-api-v2": "^1.19.1"
+    "twitter-api-v2": "^1.19.1",
+    "webpack": "^5.97.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
