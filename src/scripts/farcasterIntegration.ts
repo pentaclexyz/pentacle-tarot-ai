@@ -118,7 +118,7 @@ export class FarcasterIntegration extends TarotService {
 
             // Put image URL on its own line for proper Farcaster embedding
             const replyText = response.imageUrl
-                ? `${response.text}\n\n${response.imageUrl}` // Double newline for clean separation
+                ? `${response.text}\n\n<img src="${response.imageUrl}" alt="Tarot reading spread" />`
                 : response.text;
 
             if (this.isTestMode) {
