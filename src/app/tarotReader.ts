@@ -128,16 +128,19 @@ export class TarotReader {
         });
     }
 
+    private getFallbackImage(): string {
+        // Select random number between 1-3
+        const imageNumber = Math.floor(Math.random() * 3) + 1;
+        const imageNumberPadded = imageNumber.toString().padStart(2, '0');
+        return `/tarot/reading-${imageNumberPadded}.png`;
+    }
+
     private async generateTarotImage(
         cards: Array<TarotCard & { isReversed: boolean; position?: string }>
     ): Promise<string> {
-        const cardNames = cards
-            .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
-            .join(', ');
-
-        const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, dramatic lighting, mystical atmosphere, https://raw.githubusercontent.com/pentaclexyz/images/refs/heads/main/pentacle_japanese_anime_girl_mystic_american_1960s_style_ink_ca_a60a2797-a7a1-4b26-9bc9-685e2374ef9d.png`;
-
         try {
+            const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader, https://s.mj.run/0LLFDv6GwFw`;
+
             const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
                 method: 'POST',
                 headers: {
@@ -146,7 +149,7 @@ export class TarotReader {
                 },
                 body: JSON.stringify({
                     model: "flux-dev",
-                    height: 300,
+                    height: 200,
                     width: 600,
                     safe_mode: true,
                     prompt,
@@ -155,21 +158,19 @@ export class TarotReader {
             });
 
             if (!response.ok) {
-                throw new Error(`Venice API error: ${response.statusText}`);
+                return this.getFallbackImage();
             }
 
             const data = (await response.json()) as VeniceResponse;
 
-            if (data && data.images && data.images[0]) {
-                // Upload the returned base64 image to Cloudinary and get a PNG URL
-                const imageUrl = await this.uploadToCloudinary(data.images[0]);
-                return imageUrl;
+            if (!data.images?.[0]) {
+                return this.getFallbackImage();
             }
 
-            throw new Error('Unexpected response format from Venice API');
+            return await this.uploadToCloudinary(data.images[0]);
         } catch (error) {
             console.error("Error generating image:", error);
-            throw new Error("Failed to generate tarot image");
+            return this.getFallbackImage();
         }
     }
 
