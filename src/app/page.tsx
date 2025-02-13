@@ -1,101 +1,129 @@
-import Image from "next/image";
+// src/app/page.tsx
+'use client';
+
+import { useState } from 'react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [question, setQuestion] = useState('');
+  const [reading, setReading] = useState<{ text: string; imageUrl?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const getReading = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await fetch('/api/tarot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get reading');
+      }
+
+      const data = await response.json();
+      setReading(data);
+    } catch (err) {
+      setError('Failed to get reading. Please try again.');
+      console.error('Error getting reading:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Simple help commands for testing
+  const sendCommand = async (command: string) => {
+    setQuestion(command);
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await fetch('/api/tarot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: command })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process command');
+      }
+
+      const data = await response.json();
+      setReading(data);
+    } catch (err) {
+      setError('Failed to process command. Please try again.');
+      console.error('Error processing command:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+      <main className="p-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl mb-4">Tarot Reader</h1>
+
+          {/* Quick commands for testing */}
+          <div className="mb-4 space-x-2">
+            <button
+                onClick={() => sendCommand('help')}
+                className="border px-2 py-1 rounded"
+            >
+              Help
+            </button>
+            <button
+                onClick={() => sendCommand('about')}
+                className="border px-2 py-1 rounded"
+            >
+              About
+            </button>
+            <button
+                onClick={() => sendCommand('What kind of readings do you do?')}
+                className="border px-2 py-1 rounded"
+            >
+              Reading Types
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Ask your question..."
+                className="w-full p-2 border rounded"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <button
+                onClick={getReading}
+                disabled={loading || !question}
+                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              {loading ? 'Getting Reading...' : 'Get Reading'}
+            </button>
+          </div>
+
+          {error && (
+              <div className="text-red-500 mb-4">
+                {error}
+              </div>
+          )}
+
+          {reading && (
+              <div className="mt-4">
+                <pre className="whitespace-pre-wrap">{reading.text}</pre>
+                {reading.imageUrl && (
+                    <img
+                        src={reading.imageUrl}
+                        alt="Tarot Reading"
+                        className="mt-4 max-w-full h-auto"
+                    />
+                )}
+              </div>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
   );
 }
