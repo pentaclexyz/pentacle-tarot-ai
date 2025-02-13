@@ -24,6 +24,19 @@ export class TarotService {
     }
 
     private isInformationQuery(question: string): boolean {
+        // Clean the question by removing the prefix and trimming
+        const cleanQuestion = question.toLowerCase()
+            .replace(/@\w+-\w+\s+/, '')
+            .trim();
+
+        // Check for exact command matches first
+        const exactCommands = ['help', 'info', 'about'];
+        if (exactCommands.includes(cleanQuestion)) {
+            console.log('Matched exact command:', cleanQuestion);
+            return true;
+        }
+
+        // Then check other information patterns
         const infoPatterns = [
             /who (are|r) (you|u)/i,
             /how (do you|does this) work/i,
@@ -35,19 +48,22 @@ export class TarotService {
             /what (are|r) (you|u)/i
         ];
 
-        return infoPatterns.some(pattern => pattern.test(question));
+        return infoPatterns.some(pattern => pattern.test(cleanQuestion));
     }
 
     protected async generateReading(question: string): Promise<{ text: string, imageUrl?: string }> {
         try {
+            // Log the incoming question
+            console.log('Processing question:', question);
+
             // Check if this is an information query first
             if (this.isInformationQuery(question)) {
-                console.log('Handling information query:', question);
+                console.log('Handling as information query');
                 return await this.infoHandler.handleInformationQuery(question);
             }
 
             // Handle actual reading request
-            console.log('Generating tarot reading:', question);
+            console.log('Generating tarot reading');
             const spreadType = this.tarotReader.determineSpreadType(question);
             const cards = this.tarotReader.selectCards(spreadType);
             const response = await this.tarotReader.formatReading(question, cards, spreadType);
