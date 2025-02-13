@@ -63,7 +63,7 @@ export class TarotService {
         return isInfoQuery;
     }
 
-    protected async generateReading(question: string): Promise<{ text: string, imageUrl?: string }> {
+    async generateReading(question: string): Promise<{ text: string, imageUrl?: string }> {
         try {
             // Log the incoming question
             console.log('Processing question:', question);
