@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const [question, setQuestion] = useState('');
@@ -66,58 +66,55 @@ export default function Home() {
 
   return (
       <main className="container mx-auto p-4 max-w-3xl">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Pentacle Tarot Agent</CardTitle>
-            <CardDescription>
-              Ask a question or use the quick commands below
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-x-2 mb-4">
-              <Button
-                  variant="outline"
-                  onClick={() => sendCommand('help')}
-              >
-                Help
-              </Button>
-              <Button
-                  variant="outline"
-                  onClick={() => sendCommand('about')}
-              >
-                About
-              </Button>
-              <Button
-                  variant="outline"
-                  onClick={() => sendCommand('What kind of readings do you do?')}
-              >
-                Reading Types
-              </Button>
+        {/* Top Navigation */}
+        <header className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-3">
+            <img
+                src="/pentacle-tarot.jpg"
+                alt="Logo"
+                className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <h1 className="text-xl font-bold">Pentacle Tarot Agent</h1>
+              <p className="text-sm text-muted-foreground">
+                Ask a question or use quick commands
+              </p>
             </div>
+          </div>
+          <div className="space-x-2">
+            <Button variant="link" onClick={() => sendCommand('help')}>
+              Help
+            </Button>
+            <Button variant="link" onClick={() => sendCommand('about')}>
+              About
+            </Button>
+            <Button variant="link" onClick={() => sendCommand('What kind of readings do you do?')}>
+              Reading Types
+            </Button>
+          </div>
+        </header>
 
-            <div className="flex gap-2">
-              <Input
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ask your question..."
-                  className="flex-1"
-              />
-              <Button
-                  onClick={getReading}
-                  disabled={loading || !question}
-              >
-                {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Reading...
-                    </>
-                ) : (
-                    'Ask the Tarot'
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Question Input (No Card Wrapper) */}
+        <section className="mb-8">
+          <div className="flex gap-2">
+            <Input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Ask your question..."
+                className="flex-1"
+            />
+            <Button onClick={getReading} disabled={loading || !question}>
+              {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Reading...
+                  </>
+              ) : (
+                  'Ask the Tarot'
+              )}
+            </Button>
+          </div>
+        </section>
 
         {error && (
             <Alert variant="destructive" className="mb-4">
