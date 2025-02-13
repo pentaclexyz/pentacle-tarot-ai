@@ -71,19 +71,19 @@ export default function Home() {
         <nav className="grid justify-items-end p-4 text-xs">
           <div className="space-x-4 !text-xs">
             <Button variant="link" onClick={() => sendCommand('help')}>
-              Help
+              <span className={"text-xs"}>Help</span>
             </Button>
             <Button variant="link" onClick={() => sendCommand('about')}>
-              About
+              <span className={"text-xs"}>About</span>
             </Button>
             <Button variant="link" onClick={() => sendCommand('What kind of readings do you do?')}>
-              Reading Types
+              <span className={"text-xs"}>Reading Types</span>
             </Button>
           </div>
         </nav>
 
         {/* Main Content */}
-        <main className="flex text-xs min-h-[calc(100vh-80px)] flex-col items-center justify-center px-4 py-4 sm:px-6 lg:px-8 font-berkeley-mono">
+        <main className="flex text-xs min-h-[calc(100vh-80px)] flex-col items-center px-4 py-4 sm:px-6 lg:px-8 font-berkeley-mono">
           <div className="max-w-4xl w-full space-y-16 text-left">
             {/* Logo and Site Title */}
             <div className="flex items-center justify-center space-x-8">
@@ -119,9 +119,9 @@ export default function Home() {
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     placeholder="Ask your question..."
-                    className="flex-1"
+                    className="flex-1 !text-xs"
                 />
-                <Button onClick={getReading} disabled={loading || !question}>
+                <Button onClick={getReading} disabled={loading || !question} className={"text-xs"}>
                   {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
