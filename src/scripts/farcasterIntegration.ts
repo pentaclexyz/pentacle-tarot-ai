@@ -112,17 +112,13 @@ export class FarcasterIntegration extends TarotService {
 
             // Generate reading
             const reading = await this.generateReading(text);
+            // Force imageUrl to be empty no matter what
             const response = typeof reading === 'string'
                 ? { text: reading, imageUrl: '' }
-                : reading;
+                : { text: reading.text, imageUrl: '' };
 
-            const ogUrl = response.imageUrl
-                ? `${process.env.NEXT_PUBLIC_APP_URL}/og?img=${encodeURIComponent(response.imageUrl)}`
-                : '';
-
-            const replyText = response.imageUrl
-                ? `${response.text}\n\n${ogUrl}`
-                : response.text;
+            // Since we don't want an image, ignore any og URL creation
+            const replyText = response.text;
 
             if (this.isTestMode) {
                 console.log('TEST MODE - Would send response:', replyText);
@@ -149,6 +145,7 @@ export class FarcasterIntegration extends TarotService {
             console.error('Error handling cast:', error);
         }
     }
+
 
     public async handleWebhookEvent(event: WebhookEvent) {
         if (event.type !== 'cast.created') return;

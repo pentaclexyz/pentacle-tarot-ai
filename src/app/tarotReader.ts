@@ -122,9 +122,10 @@ export class TarotReader {
     }
 
     private getFallbackImage(): string {
-        const imageNumber = Math.floor(Math.random() * 3) + 1;
+        const totalImages = 6; // now we have 6 images
+        const imageNumber = Math.floor(Math.random() * totalImages) + 1;
         const imageNumberPadded = imageNumber.toString().padStart(2, '0');
-        return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1/tarot/reading-${imageNumberPadded}`;
+        return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1/tarot-img/reading-${imageNumberPadded}.jpg`;
     }
 
     private async generateTarotImage(
@@ -134,7 +135,7 @@ export class TarotReader {
             const cardNames = cards
                 .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
                 .join(', ');
-            const prompt = `japanese anime girl, edgy punk manga 1960s style ink anime, age 20, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
+            const prompt = `punk, hand dawn ink style art, edgy punk manga 1960s style ink anime,young female japanese tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
             const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
                 method: 'POST',
                 headers: {
@@ -220,7 +221,7 @@ export class TarotReader {
 You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
 
 **Your Response Format:**
-- **Three-line interpretation:**
+- **Three-line interpretation:**a
   1. Each line must be under **60 characters**.
   2. Each line must start with **"✧ "**.
   3. The first line interprets **${cards[0].position}**, the second **${cards[1].position}**, and the third **${cards[2]?.position || "Future"}**.
