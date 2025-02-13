@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Berkeley Mono", Helvetica, sans-serif;
   background-color: #FBF2E0;
 }
 
@@ -11,4 +11,16 @@ body {
   :root {
     --radius: 0.5rem;
   }
+}
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/fonts/berkeley-mono/BerkeleyMono-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/fonts/berkeley-mono/BerkeleyMono-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
 }
