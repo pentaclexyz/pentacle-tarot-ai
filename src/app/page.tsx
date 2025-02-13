@@ -100,7 +100,7 @@ export default function Home() {
               <div className="text-left">
                 <h1 className="text-2xl uppercase">Pentacle Tarot Agent</h1>
                 <h2 className="mt-1 text-xs text-gray-600">
-                  Your companion for inner reflection
+                  Your sassy companion for inner reflection
                 </h2>
               </div>
             </div>
