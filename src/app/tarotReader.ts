@@ -148,7 +148,10 @@ export class TarotReader {
                     width: 600,
                     safe_mode: true,
                     prompt,
-                    style_preset: "Zentangle",
+                    style_preset: "Minimalist", // works ok too
+                    // style_preset: "Minecraft", // works ok actually yes nice one
+                    // style_preset: "Origami", // good kinda modern but decent images
+                    // style_preset: "Zentagnle",
                     "hide_watermark": true,
                 }),
             });
