@@ -105,7 +105,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Intro Text */}
+            {/* Intro Text*/}
             {/*<div className="max-w-4xl mx-auto text-xs text-gray-700">*/}
             {/*  <p className="mb-4">*/}
             {/*    Receive an instant tarot reading tailored to your question.*/}
