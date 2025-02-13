@@ -98,8 +98,8 @@ export class TarotReader {
                 {
                     folder: 'tarot-readings',
                     transformation: {
-                        width: 800,
-                        height: 340,
+                        width: 600,
+                        height: 400,
                         crop: "fill",
                         format: "png",
                         quality: "auto"
@@ -112,7 +112,6 @@ export class TarotReader {
                         console.error('Cloudinary upload error:', error);
                         reject(new Error(`Failed to upload image to Cloudinary: ${error.message}`));
                     } else {
-                        // Clean the URL of any trailing semicolons or whitespace
                         const cleanUrl = result?.secure_url?.trim().replace(/;$/, '') || '';
                         console.log('Clean Cloudinary URL:', cleanUrl);
                         resolve(cleanUrl);
@@ -135,7 +134,7 @@ export class TarotReader {
             const cardNames = cards
                 .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
                 .join(', ');
-            const prompt = `japanese anime girl, mystic, american 1960s style ink cartoon, age 35, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
+            const prompt = `japanese anime girl, temperance tarot card, mystic, edgy punk manga 1960s style ink anime, age 20, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
             const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
                 method: 'POST',
                 headers: {
@@ -144,7 +143,7 @@ export class TarotReader {
                 },
                 body: JSON.stringify({
                     model: "flux-dev",
-                    height: 200,
+                    height: 400,
                     width: 600,
                     safe_mode: true,
                     prompt,
