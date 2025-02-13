@@ -11,7 +11,8 @@ export async function POST(req: Request) {
         // Get IP and admin token
         const forwardedFor = req.headers.get('x-forwarded-for');
         const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
-        const adminToken = req.headers.get('x-admin-token');
+        const adminToken = req.headers.get('x-admin-token') || undefined;
+
 
         // Check rate limit with potential bypass
         const rateLimit = rateLimiter.checkLimit(ip, adminToken);
