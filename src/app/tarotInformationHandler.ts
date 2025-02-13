@@ -44,7 +44,7 @@ Reading Types:
 Card Info:
 ✧ "@pentacle-tarot tell me about [card name]"`;
 
-    private readonly ABOUT_INFO = `✧ Digital tarot reader spitting straight facts
+    private readonly ABOUT_INFO = `✧ Your onchain tarot reader spitting straight facts
 ✧ Zero sugar-coating, pure unfiltered readings
 ✧ Using the classic Rider-Waite deck for cosmic clarity
 
