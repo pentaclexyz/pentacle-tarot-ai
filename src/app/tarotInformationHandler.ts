@@ -138,14 +138,20 @@ For specific cards, ask "tell me about [card name]"`;
 ✧ Second line about reversed meaning (under 60 chars, no period)
 ✧ Third line with practical advice (under 60 chars, no period)
 
-Then give a 3-sentence summary in a direct, clear style. Use concrete examples and avoid mystical language. Be straightforward but professional.`;
+Then give a 3-sentence summary. Requirements:
+- Direct and professional tone
+- No casual language (no: mate, bestie, vibes, fam, etc.)
+- No slang or colloquialisms
+- Clear, concrete examples
+- Avoid mystical/flowery language
+- Focus on practical interpretations`;
 
         const completion = await this.openai.chat.completions.create({
             model: "gpt-4",
             messages: [
                 {
                     role: "system",
-                    content: "You are a direct, no-nonsense tarot reader. Your explanations are clear, practical, and honest without using casual filler words."
+                    content: "You are a professional tarot reader focused on clear, direct interpretations. Never use casual terms like 'mate', 'bestie', 'vibes', etc. Keep responses straightforward and practical."
                 },
                 {
                     role: "user",
@@ -169,13 +175,13 @@ Then give a 3-sentence summary in a direct, clear style. Use concrete examples a
 ✧ Second key point diving deeper (under 60 chars, no period)
 ✧ Third key point with practical takeaway (under 60 chars, no period)
 
-Then give a unique 3-sentence summary with these requirements:
-- Write in a direct, punk-aesthetic style
-- Keep it straightforward and honest
-- No casual filler words
+Then give a unique 3-sentence summary. Requirements:
+- Direct and professional punk-aesthetic style
+- Never use casual terms (no: mate, bestie, vibes, fam, etc.)
+- No slang or colloquialisms
 - No exclamation marks
 - Sound authentic but professional
-- For identity questions, emphasize being a modern, direct tarot reader
+- Focus on clear, practical insights
 
 Question to answer: "${question}"`;
 
@@ -184,7 +190,7 @@ Question to answer: "${question}"`;
             messages: [
                 {
                     role: "system",
-                    content: "You are a direct, no-nonsense tarot reader. Your answers are clear, practical, and honest without using casual filler words."
+                    content: "You are a professional tarot reader. Keep responses direct and clear. Never use casual terms like 'mate', 'bestie', 'vibes', etc. Maintain a professional tone while being straightforward and punk-aesthetic."
                 },
                 {
                     role: "user",
