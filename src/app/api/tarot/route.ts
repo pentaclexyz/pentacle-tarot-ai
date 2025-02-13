@@ -1,5 +1,5 @@
 // src/app/api/tarot/route.ts
-import { TarotService } from '@/app/tarotService';
+import { TarotService } from '../../../scripts/tarotService';
 
 export async function POST(req: Request) {
     try {
