@@ -1,7 +1,11 @@
-// src/app/page.tsx
 'use client';
 
 import { useState } from 'react';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 
 export default function Home() {
   const [question, setQuestion] = useState('');
@@ -34,7 +38,6 @@ export default function Home() {
     }
   };
 
-  // Simple help commands for testing
   const sendCommand = async (command: string) => {
     setQuestion(command);
     try {
@@ -62,68 +65,80 @@ export default function Home() {
   };
 
   return (
-      <main className="p-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl mb-4">Tarot Reader</h1>
+      <main className="container mx-auto p-4 max-w-3xl">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Pentacle Tarot Agent</CardTitle>
+            <CardDescription>
+              Ask a question or use the quick commands below
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-x-2 mb-4">
+              <Button
+                  variant="outline"
+                  onClick={() => sendCommand('help')}
+              >
+                Help
+              </Button>
+              <Button
+                  variant="outline"
+                  onClick={() => sendCommand('about')}
+              >
+                About
+              </Button>
+              <Button
+                  variant="outline"
+                  onClick={() => sendCommand('What kind of readings do you do?')}
+              >
+                Reading Types
+              </Button>
+            </div>
 
-          {/* Quick commands for testing */}
-          <div className="mb-4 space-x-2">
-            <button
-                onClick={() => sendCommand('help')}
-                className="border px-2 py-1 rounded"
-            >
-              Help
-            </button>
-            <button
-                onClick={() => sendCommand('about')}
-                className="border px-2 py-1 rounded"
-            >
-              About
-            </button>
-            <button
-                onClick={() => sendCommand('What kind of readings do you do?')}
-                className="border px-2 py-1 rounded"
-            >
-              Reading Types
-            </button>
-          </div>
+            <div className="flex gap-2">
+              <Input
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Ask your question..."
+                  className="flex-1"
+              />
+              <Button
+                  onClick={getReading}
+                  disabled={loading || !question}
+              >
+                {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reading...
+                    </>
+                ) : (
+                    'Get Reading'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="mb-4">
-            <input
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask your question..."
-                className="w-full p-2 border rounded"
-            />
-            <button
-                onClick={getReading}
-                disabled={loading || !question}
-                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-            >
-              {loading ? 'Getting Reading...' : 'Get Reading'}
-            </button>
-          </div>
+        {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
 
-          {error && (
-              <div className="text-red-500 mb-4">
-                {error}
-              </div>
-          )}
-
-          {reading && (
-              <div className="mt-4">
-                <pre className="whitespace-pre-wrap">{reading.text}</pre>
+        {reading && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="whitespace-pre-wrap mb-4">{reading.text}</div>
                 {reading.imageUrl && (
                     <img
                         src={reading.imageUrl}
                         alt="Tarot Reading"
-                        className="mt-4 max-w-full h-auto"
+                        className="w-full h-auto rounded-lg shadow-lg"
                     />
                 )}
-              </div>
-          )}
-        </div>
+              </CardContent>
+            </Card>
+        )}
       </main>
   );
 }
