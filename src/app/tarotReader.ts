@@ -99,7 +99,7 @@ export class TarotReader {
                     folder: 'tarot-readings',
                     transformation: {
                         width: 600,
-                        height: 400,
+                        height: 600,
                         crop: "fill",
                         format: "png",
                         quality: "auto"
@@ -144,7 +144,7 @@ export class TarotReader {
                 },
                 body: JSON.stringify({
                     model: "flux-dev",
-                    height: 400,
+                    height: 600,
                     width: 600,
                     safe_mode: true,
                     prompt,
@@ -170,38 +170,40 @@ export class TarotReader {
         }
     }
 
+// In the formatReading method, update both the header generation and yes/no section:
+
     public async formatReading(
         question: string,
         cards: Array<TarotCard & { isReversed: boolean; position?: string }>,
         spreadType: "love" | "career" | "yesno" | "past-present-future"
     ): Promise<TarotResponse> {
         try {
-            const cardsHeader = cards
-                .map(card => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
-                .join(' ┆ ');
-
+            let cardsHeader = '';
             let interpretation = "";
 
-            // Handle yes/no spread
+
+            // In the formatReading method, update the yes/no section:
+
             if (spreadType === "yesno") {
                 const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
                 const confidence = cards[0].isReversed ? "the cards suggest against it" : "the cards encourage this";
-
-                // Get GPT to generate a concise interpretation
-                const prompt = `For a yes/no question: "${question}", the card is ${cards[0].name}${cards[0].isReversed ? ' (reversed)' : ''}.
-        The answer is ${yesNoAnswer}. Using the card's meaning (${cards[0].summary}), write TWO short sentences:
-        1. Explain WHY this is the answer, based on the card's energy
-        2. Give practical, direct advice based on this insight
-        
-        Use a punk-aesthetic Gen-Z style, keeping it brutally honest but supportive. Each sentence must be under 60 characters.
-        Use hedging language for future possibilities. Make it sound like advice from a friend, not AI-generated.`;
+                const header = `${cards[0].name}${cards[0].isReversed ? ' ℝ' : ''}\n\n✧ ${yesNoAnswer} - ${confidence}\n✧ ${cards[0].name}${cards[0].isReversed ? ' reversed' : ''} appears with a clear message\n`;
+                const prompt = `For a yes/no question: "${question}", the card is ${cards[0].name}${cards[0].isReversed ? ' reversed' : ''}.
+    Write TWO separate sentences:
+    1. First sentence starts with "So, [card name] [reversed if applicable], huh?" then explains the card's message
+    2. Second sentence gives practical, direct advice based on this insight
+    
+    Return them as two separate paragraphs with a blank line between them.
+    Use a punk-aesthetic Gen-Z style, keeping it brutally honest but supportive.
+    Make it sound like advice from a friend, not AI-generated.
+    Use hedging language for future possibilities.`;
 
                 const completion = await this.openai.chat.completions.create({
                     model: "gpt-4",
                     messages: [
                         {
                             role: "system",
-                            content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
+                            content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear. Always return interpretations as two separate paragraphs with a blank line between them."
                         },
                         {
                             role: "user",
@@ -213,12 +215,16 @@ export class TarotReader {
                 });
 
                 const summary = completion.choices[0].message.content || "";
-
-                interpretation = `✧ ${yesNoAnswer} - ${confidence}\n✧ ${cards[0].name} appears with a clear message\n✧ ${cards[0].summary}\n\n${summary.trim()}`;
+                interpretation = `${header}\n\n${summary.trim()}`;
             } else {
-                // Build the prompt for a full reading
+                // Handle other spread types
+                cardsHeader = cards
+                    .map(card => `${card.name}${card.isReversed ? ' ℝ' : ''}`)
+                    .join(' ┆ ');
+
+                // Build the prompt for multi-card reading
                 const prompt = `${cards
-                    .map(card => `${card.position}: ${card.name}${card.isReversed ? ' ℝ' : ''} - ${card.summary}`)
+                    .map(card => `${card.position}: ${card.name}${card.isReversed ? ' reversed' : ''} - ${card.summary}`)
                     .join('\n')}
 
 You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just raw, direct insights.
@@ -247,8 +253,7 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
                     messages: [
                         {
                             role: "system",
-                            content:
-                                "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
+                            content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear. Return interpretations as separate paragraphs with blank lines between them."
                         },
                         {
                             role: "user",
@@ -256,16 +261,13 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
                         }
                     ],
                     temperature: 0.7,
-                    max_tokens: 150
+                    max_tokens: 400
                 });
 
                 interpretation = completion.choices[0].message.content || "";
-                if (!interpretation) {
-                    throw new Error("Received null response from GPT-4");
-                }
             }
 
-            // Generate image and return
+// Generate image and return
             const imageUrl = await this.generateTarotImage(cards);
             return {
                 text: `${cardsHeader}\n\n${interpretation.trim()}`,
@@ -273,7 +275,6 @@ You are a punk-aesthetic Gen-Z tarot reader. No fluff, no vague nonsense—just 
             };
         } catch (error) {
             console.error("Error in formatReading:", error);
-            // Even in case of error, return a valid TarotResponse
             return {
                 text: "I apologize, but I encountered an error while generating your reading. Please try again.",
                 imageUrl: undefined
