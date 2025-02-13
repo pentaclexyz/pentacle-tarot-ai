@@ -9,6 +9,12 @@ export default {
   ],
   theme: {
   	extend: {
+		fontFamily: {
+			'berkeley-mono': [
+				'Berkeley Mono',
+				'monospace'
+			]
+		},
   		colors: {
   			background: 'var(--background)',
   			foreground: 'var(--foreground)'
