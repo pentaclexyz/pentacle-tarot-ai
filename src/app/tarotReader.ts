@@ -65,17 +65,27 @@ export class TarotReader {
     }
 
     determineSpreadType(question: string): "love" | "career" | "yesno" | "past-present-future" {
-        const lowerQuestion = question.toLowerCase();
+        const lowerQuestion = question.toLowerCase().trim();
 
-        if (lowerQuestion.includes("love") || lowerQuestion.includes("relationship") || lowerQuestion.includes("crush") || lowerQuestion.includes("romance")) {
-            return "love";
-        }
-        if (lowerQuestion.includes("job") || lowerQuestion.includes("work") || lowerQuestion.includes("career") || lowerQuestion.includes("business")) {
-            return "career";
-        }
-        if (lowerQuestion.startsWith("will ") || lowerQuestion.startsWith("should ")) {
+        // Remove common prefixes like "@pentacle-tarot" for more accurate matching
+        const cleanQuestion = lowerQuestion.replace(/@\w+-\w+\s+/, '');
+
+        // Check for yes/no questions first - this needs to take precedence
+        if (/^(will|should|do|does|am|are|is|has|can|could|would|have)\b/i.test(cleanQuestion)) {
+            console.log('Detected yes/no question pattern:', cleanQuestion);
             return "yesno";
         }
+
+        // Then check for other types
+        if (cleanQuestion.includes("love") || cleanQuestion.includes("relationship") ||
+            cleanQuestion.includes("crush") || cleanQuestion.includes("romance")) {
+            return "love";
+        }
+        if (cleanQuestion.includes("job") || cleanQuestion.includes("work") ||
+            cleanQuestion.includes("career") || cleanQuestion.includes("business")) {
+            return "career";
+        }
+
         return "past-present-future"; // Default spread
     }
 
@@ -182,7 +192,36 @@ export class TarotReader {
             // Handle yes/no spread
             if (spreadType === "yesno") {
                 const yesNoAnswer = cards[0].isReversed ? "No" : "Yes";
-                interpretation = `${yesNoAnswer}: ${cards[0].summary}`;
+                const confidence = cards[0].isReversed ? "the cards suggest against it" : "the cards encourage this";
+
+                // Get GPT to generate a concise interpretation
+                const prompt = `For a yes/no question: "${question}", the card is ${cards[0].name}${cards[0].isReversed ? ' (reversed)' : ''}.
+        The answer is ${yesNoAnswer}. Using the card's meaning (${cards[0].summary}), write TWO short sentences:
+        1. Explain WHY this is the answer, based on the card's energy
+        2. Give practical, direct advice based on this insight
+        
+        Use a punk-aesthetic Gen-Z style, keeping it brutally honest but supportive. Each sentence must be under 60 characters.
+        Use hedging language for future possibilities. Make it sound like advice from a friend, not AI-generated.`;
+
+                const completion = await this.openai.chat.completions.create({
+                    model: "gpt-4",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a punk-aesthetic, no-BS tarot reader. Your readings are insightful, direct, and brutally honest—like a friend who tells you what you need to hear, not what you want to hear."
+                        },
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 150
+                });
+
+                const summary = completion.choices[0].message.content || "";
+
+                interpretation = `✧ ${yesNoAnswer} - ${confidence}\n✧ ${cards[0].name} appears with a clear message\n✧ ${cards[0].summary}\n\n${summary.trim()}`;
             } else {
                 // Build the prompt for a full reading
                 const prompt = `${cards
