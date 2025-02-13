@@ -134,7 +134,7 @@ export class TarotReader {
             const cardNames = cards
                 .map(card => `${card.name}${card.isReversed ? ' (Reversed)' : ''}`)
                 .join(', ');
-            const prompt = `japanese anime girl, temperance tarot card, mystic, edgy punk manga 1960s style ink anime, age 20, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
+            const prompt = `japanese anime girl, edgy punk manga 1960s style ink anime, age 20, tarot reader with ${cardNames} cards laid out, https://s.mj.run/0LLFDv6GwFw`;
             const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
                 method: 'POST',
                 headers: {
