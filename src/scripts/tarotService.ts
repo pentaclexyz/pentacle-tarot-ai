@@ -92,7 +92,7 @@ export class TarotService {
 
             return {
                 text: readingText,
-                // imageUrl: response.imageUrl
+                imageUrl: response.imageUrl
             };
         } catch (error) {
             console.error('Error in tarot service:', error);
