@@ -112,7 +112,7 @@ export default function Home() {
                       Reading...
                     </>
                 ) : (
-                    'Get Reading'
+                    'Ask the Tarot'
                 )}
               </Button>
             </div>
