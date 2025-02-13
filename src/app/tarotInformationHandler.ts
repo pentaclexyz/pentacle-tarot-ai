@@ -77,9 +77,12 @@ When a card appears reversed, it shifts the energy - not better or worse, just a
 For specific cards, ask "tell me about [card name]"`;
 
     private getFallbackImage(): string {
-        const imageNumber = Math.floor(Math.random() * 3) + 1;
+        const totalImages = 6; // Adjust as needed
+        const imageNumber = Math.floor(Math.random() * totalImages) + 1;
         const imageNumberPadded = imageNumber.toString().padStart(2, '0');
-        return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1/tarot/reading-${imageNumberPadded}`;
+        const url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1/tarot-img/reading-${imageNumberPadded}.jpg`;
+        console.log('Using fallback image:', url);
+        return url;
     }
 
     public async handleInformationQuery(question: string): Promise<TarotResponse> {
