@@ -13,49 +13,68 @@ export class TarotInformationHandler {
     }
 
     private readonly INFORMATION_PATTERNS = {
-        COMMANDS: /^(help|info|about)$/i,  // Exact command matches
+        COMMANDS: /^(help|info|about)$/i,
         ABOUT_AGENT: /who (are|r) (you|u)|how (do you|does this) work|tell me about (yourself|urself)/i,
         REVERSED_CARDS: /what (does|is) (the )?[rℝ∀] (mean|symbol)|reversed cards?/i,
-        SPECIFIC_CARD: /tell me about (the )?([a-zA-Z\s]+) card/i,
-        SPREAD_TYPES: /what (types of )?(spreads?|readings?) (can you do|do you offer|are available)|how (can|do) i (get|ask for) (a )?reading|how (can|do) i use (you|this)|what commands/i,
+        SPECIFIC_CARD: /tell me about (the )?([a-zA-Z\s]+) card/i
     };
 
     private readonly HELP_INFO = `Available Commands:
-✧ help - Show this help message
-✧ about - Learn about your tarot reader
-✧ info - Quick guide to readings
+✧ @pentacle-tarot help - Show this help message
+✧ @pentacle-tarot about - Learn about your tarot reader
+✧ @pentacle-tarot info - Quick guide to readings
 
 Reading Types:
 ✧ Yes/No Reading (1 card)
   • Start with "will" or "should"
-  • Example: "Should I take the job?"
+  • Example: "@pentacle-tarot Should I take the job?"
 
 ✧ Love Reading (3 cards)
   • Include: love, crush, relationship
-  • Example: "How's my love life looking?"
+  • Example: "@pentacle-tarot How's my love life looking?"
 
 ✧ Career Reading (3 cards)
   • Include: job, work, career, business
-  • Example: "What's next in my career?"
+  • Example: "@pentacle-tarot What's next in my career?"
 
 ✧ General Reading (3 cards)
   • Any other question
-  • Example: "What should I focus on?"
+  • Example: "@pentacle-tarot What should I focus on?"
 
 Card Info:
-✧ Get card meanings with "tell me about [card name]"`;
+✧ "@pentacle-tarot tell me about [card name]"`;
 
-    private readonly ABOUT_INFO = `✧ Your digital tarot bestie spitting straight facts
-✧ Reading cards with zero sugar-coating, all realness
-✧ Using classic Rider-Waite deck for cosmic clarity
+    private readonly ABOUT_INFO = `✧ Digital tarot reader spitting straight facts
+✧ Zero sugar-coating, pure unfiltered readings
+✧ Using the classic Rider-Waite deck for cosmic clarity
 
-I'm your brutally honest tarot guide, serving up unfiltered card wisdom. Type "help" to learn how to get readings, or hit me with your questions about life, love, or leveling up your path.`;
+Your brutally honest tarot guide serving unfiltered card wisdom. Type "help" to learn how to get readings.`;
 
-    private readonly REVERSED_INFO = `✧ ℝ means the card showed up upside down in your reading fr fr
-✧ Reversed energy hits different - it's giving blocked vibes
-✧ Not bad necessarily, just needs a different approach
+    private readonly REVERSED_INFO = `✧ ℝ means the card showed up upside down in your reading
+✧ Reversed energy brings alternative meanings
+✧ Different perspective, different path needed
 
-Look, when a card goes ℝ mode, it's telling you to switch up your perspective. It's like when your fave song hits different in reverse - same energy, just coming at you from a whole new angle.`;
+When a card appears reversed, it shifts the energy - not better or worse, just a different angle to consider.`;
+
+    private readonly SPREAD_INFO = `Available Reading Types:
+
+✧ Yes/No Reading (1 card)
+  • Start with "will" or "should"
+  • Example: "@pentacle-tarot Should I take the job?"
+
+✧ Love Reading (3 cards)
+  • Include: love, relationship, crush
+  • Example: "@pentacle-tarot What's next in my love life?"
+
+✧ Career Reading (3 cards)
+  • Include: job, work, career, business
+  • Example: "@pentacle-tarot What's my career path?"
+
+✧ General Reading (3 cards)
+  • Any other question gets past/present/future
+  • Example: "@pentacle-tarot What should I focus on?"
+
+For specific cards, ask "tell me about [card name]"`;
 
     private getFallbackImage(): string {
         const imageNumber = Math.floor(Math.random() * 3) + 1;
@@ -67,7 +86,21 @@ Look, when a card goes ℝ mode, it's telling you to switch up your perspective.
         const imageUrl = this.getFallbackImage();
         const cleanQuestion = question.toLowerCase().replace(/@\w+-\w+\s+/, '').trim();
 
-        // Check for exact commands first
+        // Check for reading type questions first with expanded patterns
+        const readingTypePatterns = [
+            /what (type|kind|sorts?) of readings?/i,
+            /what (readings?|spreads?) (can|do) you/i,
+            /how (can|do) i get a reading/i,
+            /what readings? (are available|do you offer)/i,
+            /tell me about (your |the )?readings?/i,
+            /what spreads? (can|do) you (do|have|offer)/i
+        ];
+
+        if (readingTypePatterns.some(pattern => pattern.test(cleanQuestion))) {
+            return { text: this.SPREAD_INFO, imageUrl };
+        }
+
+        // Check for exact commands
         if (this.INFORMATION_PATTERNS.COMMANDS.test(cleanQuestion)) {
             switch(cleanQuestion) {
                 case 'help':
@@ -105,14 +138,14 @@ Look, when a card goes ℝ mode, it's telling you to switch up your perspective.
 ✧ Second line about reversed meaning (under 60 chars, no period)
 ✧ Third line with practical advice (under 60 chars, no period)
 
-Then give a 3-sentence summary in a punk-aesthetic Gen-Z style that's direct and practical. Use hedging language for possibilities. Make it sound like real advice from a friend, not AI-generated text.`;
+Then give a 3-sentence summary in a direct, clear style. Use concrete examples and avoid mystical language. Be straightforward but professional.`;
 
         const completion = await this.openai.chat.completions.create({
             model: "gpt-4",
             messages: [
                 {
                     role: "system",
-                    content: "You are a punk-aesthetic, no-BS tarot reader. Your explanations are direct, practical, and honest."
+                    content: "You are a direct, no-nonsense tarot reader. Your explanations are clear, practical, and honest without using casual filler words."
                 },
                 {
                     role: "user",
@@ -137,13 +170,12 @@ Then give a 3-sentence summary in a punk-aesthetic Gen-Z style that's direct and
 ✧ Third key point with practical takeaway (under 60 chars, no period)
 
 Then give a unique 3-sentence summary with these requirements:
-- Use a different opening each time (no "Listen up bestie" or similar repeated phrases)
-- Write in a punk-aesthetic Gen-Z style (think TikTok energy but make it mystical)
-- Keep it brutally honest and direct - zero fluff
-- Mix in some current Gen-Z slang naturally
-- Make each response feel fresh and original
-- Sound like advice from a friend, not AI-generated text
-- For identity questions, emphasize being a modern, no-nonsense tarot reader
+- Write in a direct, punk-aesthetic style
+- Keep it straightforward and honest
+- No casual filler words
+- No exclamation marks
+- Sound authentic but professional
+- For identity questions, emphasize being a modern, direct tarot reader
 
 Question to answer: "${question}"`;
 
@@ -152,7 +184,7 @@ Question to answer: "${question}"`;
             messages: [
                 {
                     role: "system",
-                    content: "You are a punk-aesthetic, no-BS tarot reader. Your answers are direct, practical, and honest."
+                    content: "You are a direct, no-nonsense tarot reader. Your answers are clear, practical, and honest without using casual filler words."
                 },
                 {
                     role: "user",
@@ -164,7 +196,7 @@ Question to answer: "${question}"`;
         });
 
         return {
-            text: completion.choices[0].message.content || "I couldn't process that question. Try asking about specific cards, spreads, or how readings work!",
+            text: completion.choices[0].message.content || "I couldn't process that question. Try asking about specific cards, spreads, or how readings work.",
             imageUrl: this.getFallbackImage()
         };
     }

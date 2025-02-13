@@ -24,31 +24,43 @@ export class TarotService {
     }
 
     private isInformationQuery(question: string): boolean {
-        // Clean the question by removing the prefix and trimming
+        // Clean the question first
         const cleanQuestion = question.toLowerCase()
             .replace(/@\w+-\w+\s+/, '')
             .trim();
 
-        // Check for exact command matches first
-        const exactCommands = ['help', 'info', 'about'];
+        // Check for exact commands first
+        const exactCommands = [
+            'help',
+            'info',
+            'about'
+        ];
         if (exactCommands.includes(cleanQuestion)) {
             console.log('Matched exact command:', cleanQuestion);
             return true;
         }
 
-        // Then check other information patterns
+        // Check information patterns
         const infoPatterns = [
+            /^(help|info|about)$/i,
             /who (are|r) (you|u)/i,
             /how (do you|does this) work/i,
             /what (does|is) (the )?[rℝ∀] (mean|symbol)/i,
             /tell me about (the )?([a-zA-Z\s]+) card/i,
-            /what (types of )?(spreads?|readings?) (can you do|do you offer|are available)/i,
+            /what (types? of |kind of )?(spreads?|readings?)/i,
+            /what (readings?|spreads?) (can|do) you (do|offer|give)/i,
+            /how (can|do) i (get|ask for) (a )?reading/i,
+            /how (can|do) i use (you|this)/i,
             /explain|describe|define|meaning of/i,
             /tell me about (yourself|urself)/i,
             /what (are|r) (you|u)/i
         ];
 
-        return infoPatterns.some(pattern => pattern.test(cleanQuestion));
+        const isInfoQuery = infoPatterns.some(pattern => pattern.test(cleanQuestion));
+        if (isInfoQuery) {
+            console.log('Matched information pattern:', cleanQuestion);
+        }
+        return isInfoQuery;
     }
 
     protected async generateReading(question: string): Promise<{ text: string, imageUrl?: string }> {
@@ -80,7 +92,7 @@ export class TarotService {
 
             return {
                 text: readingText,
-                imageUrl: response.imageUrl
+                // imageUrl: response.imageUrl
             };
         } catch (error) {
             console.error('Error in tarot service:', error);

@@ -20,19 +20,13 @@ const readingQuestions = [
 
 // Information questions
 const infoQuestions = [
-    // Basic commands
-    "help",
-    "info",
-    "about",
-    // Identity questions
     "Who are you?",
     "How do you work?",
-    "Tell me about yourself",
-    // Card info
     "What does the R symbol mean?",
     "Tell me about the Death card",
-    // Reading types
     "What kind of readings do you do?",
+    "Tell me about yourself",
+    "help",
     "How do I get a reading?",
     "How can I use this?",
     "What spreads are available?"
@@ -56,25 +50,29 @@ function promptUser(): Promise<string> {
         console.log('1. Random reading question');
         console.log('2. Random information question');
         console.log('3. Enter your own question');
+        console.log('\nOr type your question directly, e.g., "help", "who are you", etc.');
 
-        rl.question('Enter your choice (1-3): ', (answer) => {
-            switch(answer.trim()) {
-                case '1':
-                    resolve('@pentacle-tarot ' + getRandomQuestion(readingQuestions));
-                    break;
-                case '2':
-                    resolve('@pentacle-tarot ' + getRandomQuestion(infoQuestions));
-                    break;
-                case '3':
-                    rl.question('Enter your question: ', (question) => {
-                        resolve(question.startsWith('@pentacle-tarot') ?
-                            question :
-                            '@pentacle-tarot ' + question);
-                    });
-                    break;
-                default:
-                    console.log('Invalid choice, using random reading question');
-                    resolve('@pentacle-tarot ' + getRandomQuestion(readingQuestions));
+        rl.question('Your choice: ', (answer) => {
+            // If it's a number, handle as menu choice
+            if (['1', '2', '3'].includes(answer.trim())) {
+                switch(answer.trim()) {
+                    case '1':
+                        resolve('@pentacle-tarot ' + getRandomQuestion(readingQuestions));
+                        break;
+                    case '2':
+                        resolve('@pentacle-tarot ' + getRandomQuestion(infoQuestions));
+                        break;
+                    case '3':
+                        rl.question('Enter your question: ', (question) => {
+                            resolve(question.startsWith('@pentacle-tarot') ?
+                                question :
+                                '@pentacle-tarot ' + question);
+                        });
+                        break;
+                }
+            } else {
+                // Treat as direct question
+                resolve('@pentacle-tarot ' + answer);
             }
         });
     });
