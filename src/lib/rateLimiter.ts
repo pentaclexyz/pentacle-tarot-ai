@@ -1,5 +1,7 @@
 // src/lib/rateLimiter.ts
 
+import { randomBytes } from 'crypto';
+
 interface RequestRecord {
     count: number;
     firstRequest: number;
@@ -9,8 +11,7 @@ export class RateLimiter {
     private requests: Map<string, RequestRecord> = new Map();
     private readonly WINDOW_MS = 24 * 60 * 60 * 1000;  // 24 hours
     private readonly MAX_REQUESTS = 10;
-    private readonly ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'your-secret-token';
-
+    private readonly ADMIN_TOKEN = process.env.ADMIN_TOKEN || randomBytes(32).toString('hex');
     public checkLimit(ip: string, adminToken?: string): { allowed: boolean; message?: string } {
         // Bypass rate limit if admin token matches
         if (adminToken === this.ADMIN_TOKEN) {
