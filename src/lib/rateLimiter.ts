@@ -10,7 +10,6 @@ interface RequestRecord {
 export class RateLimiter {
     private requests: Map<string, RequestRecord> = new Map();
     private readonly MAX_REQUESTS = Number.MAX_SAFE_INTEGER; // Effectively unlimited
-    private readonly MAX_REQUESTS = 10;
     private readonly ADMIN_TOKEN = process.env.ADMIN_TOKEN || randomBytes(32).toString('hex');
     public checkLimit(ip: string, adminToken?: string): { allowed: boolean; message?: string } {
         // Bypass rate limit if admin token matches
