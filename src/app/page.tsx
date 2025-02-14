@@ -62,6 +62,9 @@ export default function Home() {
     const sendCommand = async (command: string) => {
         setQuestion(command);
         try {
+            // Don't set loading state for nav commands
+            setError('');
+
             const response = await fetch('/api/tarot', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
