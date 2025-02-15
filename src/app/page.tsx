@@ -2,23 +2,20 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import {useEffect, useState} from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { SignInButton } from "@/components/signInbutton";
-import { usePrivy } from '@privy-io/react-auth';
 
 export default function Home() {
-    const { user, login } = usePrivy();
     const [question, setQuestion] = useState('');
     const [reading, setReading] = useState<{ text: string; imageUrl?: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [loadingStage, setLoadingStage] = useState(0);
     const [isMinting, setIsMinting] = useState(false);
-    const [isWalletConnected, setIsWalletConnected] = useState(false);
 
     const loadingMessages = [
         "Analyzing your question to choose the perfect spread...",
@@ -26,9 +23,10 @@ export default function Home() {
         "Generating a visual representation of your reading..."
     ];
 
-    useEffect(() => {
-        setIsWalletConnected(!!user?.wallet?.address);
-    }, [user?.wallet?.address]);
+    // Remove isWalletConnected useEffect if not needed
+    // useEffect(() => {
+    //   setIsWalletConnected(!!user?.wallet?.address);
+    // }, [user?.wallet?.address]);
 
     const getReading = async () => {
         try {
@@ -45,8 +43,8 @@ export default function Home() {
 
             const response = await fetch('/api/tarot', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({question})
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
             });
 
             if (!response.ok) {
@@ -70,7 +68,7 @@ export default function Home() {
             setIsMinting(true);
             const response = await fetch('/api/mint', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reading })
             });
 
@@ -93,6 +91,7 @@ export default function Home() {
             setIsMinting(false);
         }
     };
+
     const sendCommand = async (command: string) => {
         setQuestion(command);
         try {
@@ -100,8 +99,8 @@ export default function Home() {
 
             const response = await fetch('/api/tarot', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({question: command})
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: command })
             });
 
             if (!response.ok) {
@@ -130,7 +129,7 @@ export default function Home() {
                         <span className={"text-xs"}>Reading Types</span>
                     </Button>
                     <div>
-                        <SignInButton/>
+                        <SignInButton />
                     </div>
                 </div>
             </nav>
@@ -144,7 +143,7 @@ export default function Home() {
                                     src="/pentacle-tarot.jpg"
                                     alt="Logo"
                                     fill
-                                    style={{objectFit: 'cover'}}
+                                    style={{ objectFit: 'cover' }}
                                 />
                             </div>
                         </Link>
@@ -167,7 +166,7 @@ export default function Home() {
                             <Button onClick={getReading} disabled={loading || !question} className={"text-xs"}>
                                 {loading ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         {loadingMessages[loadingStage]}
                                     </>
                                 ) : (
@@ -202,7 +201,7 @@ export default function Home() {
                                     >
                                         {isMinting ? (
                                             <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Minting...
                                             </>
                                         ) : (
