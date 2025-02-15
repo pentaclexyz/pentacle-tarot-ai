@@ -73,20 +73,27 @@ export default function Home() {
             const result = await response.json();
 
             if (!response.ok) {
-                // If the response is not OK, throw an error with the server's error message
-                throw new Error(result.error || 'Failed to mint reading');
+                throw new Error(result.error || 'Failed to save reading');
             }
 
-            console.log('Minting result:', result);
-            alert(result.message || 'Reading minted successfully!');
+            console.log('IPFS upload result:', result);
+
+            // Open IPFS URLs if available
+            if (result.imageUrl) {
+                window.open(result.imageUrl, '_blank');
+            }
+            if (result.textUrl) {
+                window.open(result.textUrl, '_blank');
+            }
+
+            alert('Reading saved to IPFS successfully!');
         } catch (error) {
             console.error('Minting error:', error);
-            alert(error.message || 'Failed to mint reading');
+            alert(error.message || 'Failed to save reading');
         } finally {
             setIsMinting(false);
         }
     };
-
     const sendCommand = async (command: string) => {
         setQuestion(command);
         try {

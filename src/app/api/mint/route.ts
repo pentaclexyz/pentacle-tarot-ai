@@ -1,10 +1,20 @@
+// src/app/api/mint/route.ts
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
     try {
+        // Validate Filebase credentials
+        const apiKey = process.env.FILEBASE_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({
+                success: false,
+                error: 'Filebase API key not configured'
+            }, { status: 500 });
+        }
+
         const reading = await req.json();
 
-        // Basic validation
+        // Validate reading data
         if (!reading || !reading.text || !reading.imageUrl) {
             return NextResponse.json({
                 success: false,
@@ -12,23 +22,19 @@ export async function POST(req: Request) {
             }, { status: 400 });
         }
 
-        // TODO: Implement actual minting logic (e.g., blockchain, NFT, etc.)
-        console.log('Minting reading:', {
-            text: reading.text,
-            imageUrl: reading.imageUrl
-        });
-
+        // If image is already on Cloudinary, we can use that URL directly
         return NextResponse.json({
             success: true,
-            message: 'Reading minted successfully',
-            // You might want to return a transaction hash or other relevant info
-            mintedAt: new Date().toISOString()
+            message: 'Reading prepared for minting',
+            imageUrl: reading.imageUrl,
+            text: reading.text
         });
+
     } catch (error) {
-        console.error('Mint route error:', error);
+        console.error('Minting preparation error:', error);
         return NextResponse.json({
             success: false,
-            error: 'Failed to mint reading'
+            error: error instanceof Error ? error.message : 'Failed to prepare reading for minting'
         }, { status: 500 });
     }
 }
