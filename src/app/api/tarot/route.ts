@@ -2,6 +2,7 @@
 import { TarotService } from '../../../scripts/tarotService';
 import { ContentFilter } from '@/lib/contentFilter';
 import { RateLimiter } from '@/lib/rateLimiter';
+import { uploadToFilebase, ReadingMetadata } from '@/lib/filebase';
 
 const contentFilter = new ContentFilter();
 const rateLimiter = new RateLimiter();
@@ -12,7 +13,6 @@ export async function POST(req: Request) {
         const forwardedFor = req.headers.get('x-forwarded-for');
         const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
         const adminToken = req.headers.get('x-admin-token') || undefined;
-
 
         // Check rate limit with potential bypass
         const rateLimit = rateLimiter.checkLimit(ip, adminToken);
@@ -41,7 +41,27 @@ export async function POST(req: Request) {
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
 
-        return Response.json(response);
+        // Format and upload reading to IPFS
+        const metadata: ReadingMetadata = {
+            name: `Pentacle Tarot Reading ${Date.now()}`,
+            description: "A unique AI-generated tarot reading",
+            reading: {
+                cards: response.text.split('\n')[0], // First line has the cards
+                interpretation: response.text,
+                timestamp: new Date().toISOString(),
+                type: "tarot"
+            },
+            image: response.imageUrl
+        };
+
+        // Upload to IPFS and include hash in response
+        const ipfsHash = await uploadToFilebase(metadata);
+
+        return Response.json({
+            ...response,
+            ipfsHash
+        });
+
     } catch (error) {
         console.error('Error in tarot API:', error);
         return Response.json(
