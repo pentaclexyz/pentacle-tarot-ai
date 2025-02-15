@@ -110,17 +110,21 @@ export class FarcasterIntegration extends TarotService {
                 return;
             }
 
-            // Generate reading
             const reading = await this.generateReading(text);
-            // Force imageUrl to be empty no matter what
+            // const response = typeof reading === 'string'
+            //     ? { text: reading, imageUrl: '' }
+            //     : reading;
+            //
+            // const replyText = response.imageUrl
+            //     ? `${response.text}\n\n${response.imageUrl}`
+            //     : response.text;
+
             const response = typeof reading === 'string'
                 ? { text: reading, imageUrl: '' }
-                : reading;
+                : { text: reading.text, imageUrl: '' };
 
-            // Put image URL on its own line for proper Farcaster embedding
-            const replyText = response.imageUrl
-                ? `${response.text}\n\n${response.imageUrl}` // Double newline for clean separation
-                : response.text;
+            // Since we don't want an image, ignore any og URL creation
+            const replyText = response.text;
 
             if (this.isTestMode) {
                 console.log('TEST MODE - Would send response:', replyText);
@@ -132,12 +136,12 @@ export class FarcasterIntegration extends TarotService {
                 text: replyText,
                 parent: castHash,
                 channelId: 'tarot',
+                embeds: [{ url: response.imageUrl }],
             });
 
             this.processedCasts.add(castHash);
             this.saveProcessedCasts();
 
-            // Cleanup old processed casts if needed
             if (this.processedCasts.size > 1000) {
                 const oldestCasts = Array.from(this.processedCasts).slice(0, 500);
                 oldestCasts.forEach(hash => this.processedCasts.delete(hash));
@@ -148,20 +152,16 @@ export class FarcasterIntegration extends TarotService {
         }
     }
 
-
     public async handleWebhookEvent(event: WebhookEvent) {
         if (event.type !== 'cast.created') return;
-
         const cast = {
             hash: event.data.hash || 'unknown-hash',
             text: event.data.text || '',
             timestamp: event.data.timestamp || new Date().toISOString()
         };
-
         await this.handleCast(cast);
     }
 
-    // Test method for manual testing
     public async testReading(question: string) {
         await this.handleCast({
             hash: 'test-hash-' + Date.now(),
