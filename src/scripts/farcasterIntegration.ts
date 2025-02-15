@@ -115,10 +115,12 @@ export class FarcasterIntegration extends TarotService {
             // Force imageUrl to be empty no matter what
             const response = typeof reading === 'string'
                 ? { text: reading, imageUrl: '' }
-                : { text: reading.text, imageUrl: '' };
+                : reading;
 
-            // Since we don't want an image, ignore any og URL creation
-            const replyText = response.text;
+            // Put image URL on its own line for proper Farcaster embedding
+            const replyText = response.imageUrl
+                ? `${response.text}\n\n${response.imageUrl}` // Double newline for clean separation
+                : response.text;
 
             if (this.isTestMode) {
                 console.log('TEST MODE - Would send response:', replyText);

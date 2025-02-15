@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pentacle Tarot",
-  description: "Your sassy companion for inner reflection",
+  description: "Your bff for inner reflection",
 };
 
 export default function RootLayout({
