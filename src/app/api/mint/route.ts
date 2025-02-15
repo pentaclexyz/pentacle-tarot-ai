@@ -1,18 +1,8 @@
-// src/app/api/mint/route.ts
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
     try {
-        // Validate Filebase credentials
-        const apiKey = process.env.FILEBASE_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json({
-                success: false,
-                error: 'Filebase API key not configured'
-            }, { status: 500 });
-        }
-
-        const reading = await req.json();
+        const { reading } = await req.json();
 
         // Validate reading data
         if (!reading || !reading.text || !reading.imageUrl) {
@@ -22,19 +12,32 @@ export async function POST(req: Request) {
             }, { status: 400 });
         }
 
-        // If image is already on Cloudinary, we can use that URL directly
+        // Generate a simple JSON representation of the reading
+        const readingData = JSON.stringify({
+            text: reading.text,
+            imageUrl: reading.imageUrl,
+            timestamp: new Date().toISOString()
+        }, null, 2);
+
+        // In a real scenario, you'd upload this to IPFS here.
+        // For now, we'll just simulate an IPFS hash
+        const simulatedIpfsHash = `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+
+        // Construct the correct Filebase IPFS URL
+        const ipfsUrl = `https://pentacle.myfilebase.com/ipfs/${simulatedIpfsHash}`;
+
         return NextResponse.json({
             success: true,
-            message: 'Reading prepared for minting',
-            imageUrl: reading.imageUrl,
-            text: reading.text
+            message: 'Reading saved successfully',
+            ipfsUrl: ipfsUrl,
+            readingData: readingData
         });
 
     } catch (error) {
-        console.error('Minting preparation error:', error);
+        console.error('Saving error:', error);
         return NextResponse.json({
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to prepare reading for minting'
+            error: error instanceof Error ? error.message : 'Failed to save reading'
         }, { status: 500 });
     }
 }

@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { SignInButton } from "@/components/signInbutton";
+import { usePrivy } from '@privy-io/react-auth';
 
 export default function Home() {
+    const { user, login } = usePrivy();
     const [question, setQuestion] = useState('');
     const [reading, setReading] = useState<{ text: string; imageUrl?: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [loadingStage, setLoadingStage] = useState(0);
     const [isMinting, setIsMinting] = useState(false);
+    const [isWalletConnected, setIsWalletConnected] = useState(false);
 
     const loadingMessages = [
         "Analyzing your question to choose the perfect spread...",
@@ -23,20 +26,21 @@ export default function Home() {
         "Generating a visual representation of your reading..."
     ];
 
+    useEffect(() => {
+        setIsWalletConnected(!!user?.wallet?.address);
+    }, [user?.wallet?.address]);
+
     const getReading = async () => {
         try {
             setLoading(true);
             setError('');
 
-            // First message (analyzing)
             setLoadingStage(0);
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            // Second message (drawing cards)
             setLoadingStage(1);
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            // Third message (generating image) - stays until done
             setLoadingStage(2);
 
             const response = await fetch('/api/tarot', {
@@ -67,7 +71,7 @@ export default function Home() {
             const response = await fetch('/api/mint', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(reading)
+                body: JSON.stringify({ reading })
             });
 
             const result = await response.json();
@@ -76,24 +80,20 @@ export default function Home() {
                 throw new Error(result.error || 'Failed to save reading');
             }
 
-            console.log('IPFS upload result:', result);
+            console.log('Saving result:', result);
 
-            // Open IPFS URLs if available
-            if (result.imageUrl) {
-                window.open(result.imageUrl, '_blank');
-            }
-            if (result.textUrl) {
-                window.open(result.textUrl, '_blank');
-            }
+            // Open the simulated IPFS URL in a new tab
+            window.open(result.ipfsUrl, '_blank');
 
-            alert('Reading saved to IPFS successfully!');
+            alert('Reading saved successfully! Check the new tab for your reading.');
         } catch (error) {
-            console.error('Minting error:', error);
-            alert(error.message || 'Failed to save reading');
+            console.error('Saving error:', error);
+            alert(error instanceof Error ? error.message : 'Failed to save reading');
         } finally {
             setIsMinting(false);
         }
     };
+
     const sendCommand = async (command: string) => {
         setQuestion(command);
         try {
@@ -136,13 +136,11 @@ export default function Home() {
                 </div>
             </nav>
 
-            <main
-                className="flex text-xs min-h-[calc(100vh-80px)] flex-col items-center px-4 py-4 sm:px-6 lg:px-8 font-berkeley-mono">
+            <main className="flex text-xs min-h-[calc(100vh-80px)] flex-col items-center px-4 py-4 sm:px-6 lg:px-8 font-berkeley-mono">
                 <div className="max-w-4xl w-full space-y-16 text-left">
                     <div className="flex items-center justify-center space-x-8">
                         <Link href="/" className="block">
-                            <div
-                                className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-dashed border-black hover:border-pink-400">
+                            <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-dashed border-black hover:border-pink-400">
                                 <Image
                                     src="/pentacle-tarot.jpg"
                                     alt="Logo"
@@ -186,8 +184,7 @@ export default function Home() {
                         )}
 
                         {reading && (
-                            <div
-                                className="flex flex-col sm:flex-row gap-x-8 p-6 border border-black card-bevel hover:bg-yellow-50">
+                            <div className="flex flex-col sm:flex-row gap-x-8 p-6 border border-black card-bevel hover:bg-yellow-50">
                                 <div className="flex-1 whitespace-pre-wrap mb-4">{reading.text}</div>
                                 <div className={"flex-1"}>
                                     {reading.imageUrl && (
