@@ -1,23 +1,8 @@
 // src/lib/filebase.ts
-
-// Export the type
-export interface ReadingMetadata {
-    name: string;
-    description: string;
-    reading: {
-        cards: string;
-        interpretation: string;
-        timestamp: string;
-        type: string;
-    };
-    image?: string;
-}
-
 export async function uploadToFilebase(metadata: ReadingMetadata): Promise<string> {
     try {
         console.log('Attempting to upload metadata:', JSON.stringify(metadata, null, 2));
 
-        // Create a JSON Blob/File of the metadata
         const metadataBlob = new Blob([JSON.stringify(metadata)], {
             type: 'application/json'
         });
@@ -25,10 +10,12 @@ export async function uploadToFilebase(metadata: ReadingMetadata): Promise<strin
         const formData = new FormData();
         formData.append('file', metadataBlob, 'reading.json');
 
-        const response = await fetch('https://api.filebase.io/v1/ipfs/upload', {
+        // Use the S3 endpoint instead
+        const response = await fetch('https://s3.filebase.com', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.FILEBASE_API_KEY}`
+                'Authorization': `Basic ${Buffer.from(process.env.FILEBASE_ACCESS_KEY + ':' + process.env.FILEBASE_SECRET_KEY).toString('base64')}`,
+                'x-amz-bucket': process.env.FILEBASE_BUCKET_NAME
             },
             body: formData
         });
@@ -41,7 +28,7 @@ export async function uploadToFilebase(metadata: ReadingMetadata): Promise<strin
 
         const data = await response.json();
         console.log('Filebase success response:', data);
-        return data.cid;
+        return data.Location || data.cid; // S3 returns Location
     } catch (error) {
         console.error('Error uploading to Filebase:', error);
         throw error;
