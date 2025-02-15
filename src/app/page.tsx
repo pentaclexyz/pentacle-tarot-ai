@@ -70,11 +70,18 @@ export default function Home() {
                 body: JSON.stringify(reading)
             });
 
-            if (!response.ok) throw new Error('Failed to mint reading');
+            const result = await response.json();
 
-            await response.json();
+            if (!response.ok) {
+                // If the response is not OK, throw an error with the server's error message
+                throw new Error(result.error || 'Failed to mint reading');
+            }
+
+            console.log('Minting result:', result);
+            alert(result.message || 'Reading minted successfully!');
         } catch (error) {
             console.error('Minting error:', error);
+            alert(error.message || 'Failed to mint reading');
         } finally {
             setIsMinting(false);
         }
