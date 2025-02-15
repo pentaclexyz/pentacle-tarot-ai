@@ -1,40 +1,22 @@
-// src/lib/filebase.ts
-export interface ReadingMetadata {
-    name: string;
-    description: string;
-    reading: {
-        cards: string;
-        interpretation: string;
-        timestamp: string;
-        type: string;
-    };
-    image?: string;
-}
-
 export async function uploadToFilebase(metadata: ReadingMetadata): Promise<string> {
     try {
         console.log('Attempting to upload metadata:', JSON.stringify(metadata, null, 2));
 
-        // Format specifically for Filebase IPFS API
-        const filebasePayload = {
-            pinataOptions: {
-                cidVersion: 1
-            },
-            pinataMetadata: {
-                name: metadata.name
-            },
-            pinataContent: metadata
-        };
+        // Create a JSON Blob/File of the metadata
+        const metadataBlob = new Blob([JSON.stringify(metadata)], {
+            type: 'application/json'
+        });
 
-        console.log('Formatted payload for Filebase:', JSON.stringify(filebasePayload, null, 2));
+        const formData = new FormData();
+        formData.append('file', metadataBlob, 'reading.json');
 
-        const response = await fetch('https://api.filebase.io/v1/ipfs', {
+        const response = await fetch('https://api.filebase.io/v1/ipfs/upload', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.FILEBASE_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${process.env.FILEBASE_API_KEY}`
+                // Don't set Content-Type - FormData will set it automatically
             },
-            body: JSON.stringify(filebasePayload)
+            body: formData
         });
 
         if (!response.ok) {
