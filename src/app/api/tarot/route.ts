@@ -41,9 +41,6 @@ export async function POST(req: Request) {
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
 
-        // Add debug logging
-        console.log('Reading generated:', response);
-
         try {
             // Format and upload reading to IPFS
             const metadata: ReadingMetadata = {
@@ -58,24 +55,27 @@ export async function POST(req: Request) {
                 image: response.imageUrl
             };
 
-            console.log('Attempting IPFS upload with metadata:', metadata);
             const ipfsHash = await uploadToFilebase(metadata);
-            console.log('IPFS upload successful, hash:', ipfsHash);
 
             return Response.json({
                 ...response,
                 ipfsHash
             });
         } catch (uploadError) {
-            // If IPFS upload fails, still return the reading
             console.error('IPFS upload failed:', uploadError);
             return Response.json(response);
         }
 
     } catch (error) {
         console.error('Detailed API error:', error);
+        if (error instanceof Error) {
+            return Response.json(
+                { error: 'Failed to generate reading', details: error.message },
+                { status: 500 }
+            );
+        }
         return Response.json(
-            { error: 'Failed to generate reading', details: error.message },
+            { error: 'Failed to generate reading' },
             { status: 500 }
         );
     }
