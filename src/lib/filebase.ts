@@ -1,4 +1,16 @@
 // src/lib/filebase.ts
+export interface ReadingMetadata {
+    name: string;
+    description: string;
+    reading: {
+        cards: string;
+        interpretation: string;
+        timestamp: string;
+        type: string;
+    };
+    image?: string;
+}
+
 export async function uploadToFilebase(metadata: ReadingMetadata): Promise<string> {
     try {
         console.log('Attempting to upload metadata:', JSON.stringify(metadata, null, 2));
