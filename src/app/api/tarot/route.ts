@@ -41,31 +41,41 @@ export async function POST(req: Request) {
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
 
-        // Format and upload reading to IPFS
-        const metadata: ReadingMetadata = {
-            name: `Pentacle Tarot Reading ${Date.now()}`,
-            description: "A unique AI-generated tarot reading",
-            reading: {
-                cards: response.text.split('\n')[0], // First line has the cards
-                interpretation: response.text,
-                timestamp: new Date().toISOString(),
-                type: "tarot"
-            },
-            image: response.imageUrl
-        };
+        // Add debug logging
+        console.log('Reading generated:', response);
 
-        // Upload to IPFS and include hash in response
-        const ipfsHash = await uploadToFilebase(metadata);
+        try {
+            // Format and upload reading to IPFS
+            const metadata: ReadingMetadata = {
+                name: `Pentacle Tarot Reading ${Date.now()}`,
+                description: "A unique AI-generated tarot reading",
+                reading: {
+                    cards: response.text.split('\n')[0],
+                    interpretation: response.text,
+                    timestamp: new Date().toISOString(),
+                    type: "tarot"
+                },
+                image: response.imageUrl
+            };
 
-        return Response.json({
-            ...response,
-            ipfsHash
-        });
+            console.log('Attempting IPFS upload with metadata:', metadata);
+            const ipfsHash = await uploadToFilebase(metadata);
+            console.log('IPFS upload successful, hash:', ipfsHash);
+
+            return Response.json({
+                ...response,
+                ipfsHash
+            });
+        } catch (uploadError) {
+            // If IPFS upload fails, still return the reading
+            console.error('IPFS upload failed:', uploadError);
+            return Response.json(response);
+        }
 
     } catch (error) {
-        console.error('Error in tarot API:', error);
+        console.error('Detailed API error:', error);
         return Response.json(
-            { error: 'Failed to generate reading' },
+            { error: 'Failed to generate reading', details: error.message },
             { status: 500 }
         );
     }
