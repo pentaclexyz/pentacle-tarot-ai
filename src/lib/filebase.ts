@@ -1,3 +1,18 @@
+// src/lib/filebase.ts
+
+// Export the type
+export interface ReadingMetadata {
+    name: string;
+    description: string;
+    reading: {
+        cards: string;
+        interpretation: string;
+        timestamp: string;
+        type: string;
+    };
+    image?: string;
+}
+
 export async function uploadToFilebase(metadata: ReadingMetadata): Promise<string> {
     try {
         console.log('Attempting to upload metadata:', JSON.stringify(metadata, null, 2));
@@ -14,7 +29,6 @@ export async function uploadToFilebase(metadata: ReadingMetadata): Promise<strin
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.FILEBASE_API_KEY}`
-                // Don't set Content-Type - FormData will set it automatically
             },
             body: formData
         });
