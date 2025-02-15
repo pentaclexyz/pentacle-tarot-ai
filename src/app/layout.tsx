@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import PrivyProviderConfig from "@/app/providers/privyConfig";
+import NavigationWrapper from "@/components/navigationWrapper";
+import WagmiProvider from "@/lib/wagmi";
 
 export const metadata: Metadata = {
   title: "Pentacle Tarot",
@@ -24,10 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body>
+      <WagmiProvider>{children}</WagmiProvider>
       </body>
     </html>
   );
