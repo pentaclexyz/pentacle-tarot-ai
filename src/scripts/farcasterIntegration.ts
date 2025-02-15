@@ -9,6 +9,14 @@ interface Cast {
     timestamp: string;
 }
 
+interface PublishCastParams {
+    signerUuid: string;
+    text: string;
+    parent: string;
+    channelId: string;
+    embeds?: { url: string }[];
+}
+
 interface WebhookEvent {
     type: string;
     data: {
@@ -111,19 +119,10 @@ export class FarcasterIntegration extends TarotService {
             }
 
             const reading = await this.generateReading(text);
-            // const response = typeof reading === 'string'
-            //     ? { text: reading, imageUrl: '' }
-            //     : reading;
-            //
-            // const replyText = response.imageUrl
-            //     ? `${response.text}\n\n${response.imageUrl}`
-            //     : response.text;
-
             const response = typeof reading === 'string'
                 ? { text: reading, imageUrl: '' }
-                : { text: reading.text, imageUrl: '' };
+                : { text: reading.text, imageUrl: reading.imageUrl };
 
-            // Since we don't want an image, ignore any og URL creation
             const replyText = response.text;
 
             if (this.isTestMode) {
@@ -131,13 +130,18 @@ export class FarcasterIntegration extends TarotService {
                 return;
             }
 
-            await this.client.publishCast({
+            const publishParams: PublishCastParams = {
                 signerUuid: this.signerUuid,
                 text: replyText,
                 parent: castHash,
-                channelId: 'tarot',
-                embeds: [{ url: response.imageUrl }],
-            });
+                channelId: 'tarot'
+            };
+
+            if (response.imageUrl) {
+                publishParams.embeds = [{ url: response.imageUrl }];
+            }
+
+            await this.client.publishCast(publishParams);
 
             this.processedCasts.add(castHash);
             this.saveProcessedCasts();
