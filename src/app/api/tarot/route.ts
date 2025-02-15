@@ -45,8 +45,8 @@ export async function POST(req: Request) {
         try {
             // Format metadata for potential upload
             const metadata: ReadingMetadata = {
-                name: `Pentacle Tarot Reading ${Date.now()}`,
-                description: "A unique AI-generated tarot reading",
+                name: `Pentacle Tarot reading ${Date.now()}`,
+                description: "Made for you by your bff for inner reflection",
                 reading: {
                     cards: response.text.split('\n')[0],
                     interpretation: response.text,
