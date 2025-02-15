@@ -41,8 +41,9 @@ export async function POST(req: Request) {
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
 
+        // Modify the upload process to be optional and not break the entire request
         try {
-            // Format and upload reading to IPFS
+            // Format metadata for potential upload
             const metadata: ReadingMetadata = {
                 name: `Pentacle Tarot Reading ${Date.now()}`,
                 description: "A unique AI-generated tarot reading",
@@ -55,14 +56,21 @@ export async function POST(req: Request) {
                 image: response.imageUrl
             };
 
-            const ipfsHash = await uploadToFilebase(metadata);
+            // Optional upload with fallback
+            let ipfsHash;
+            try {
+                ipfsHash = await uploadToFilebase(metadata);
+            } catch (uploadError) {
+                console.warn('IPFS upload failed:', uploadError);
+                ipfsHash = null;
+            }
 
             return Response.json({
                 ...response,
                 ipfsHash
             });
-        } catch (uploadError) {
-            console.error('IPFS upload failed:', uploadError);
+        } catch (processingError) {
+            console.error('Error processing reading:', processingError);
             return Response.json(response);
         }
 
