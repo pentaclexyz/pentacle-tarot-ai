@@ -1,4 +1,6 @@
 // src/lib/filebase.ts
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
 export interface ReadingMetadata {
     name: string;
     description: string;
@@ -19,33 +21,34 @@ export async function uploadToFilebase(metadata: ReadingMetadata): Promise<strin
 
         console.log('Attempting to upload metadata:', JSON.stringify(metadata, null, 2));
 
-        const metadataBlob = new Blob([JSON.stringify(metadata)], {
-            type: 'application/json'
+        // Configure S3 client for Filebase
+        const s3Client = new S3Client({
+            endpoint: "https://s3.filebase.com",
+            region: "us-east-1", // Filebase uses us-east-1
+            credentials: {
+                accessKeyId: process.env.FILEBASE_ACCESS_KEY,
+                secretAccessKey: process.env.FILEBASE_SECRET_KEY
+            }
         });
 
-        const formData = new FormData();
-        formData.append('file', metadataBlob, 'reading.json');
+        // Generate a unique filename
+        const filename = `reading-${Date.now()}.json`;
 
-        const headers: HeadersInit = {
-            'Authorization': `Basic ${Buffer.from(process.env.FILEBASE_ACCESS_KEY + ':' + process.env.FILEBASE_SECRET_KEY).toString('base64')}`,
-            'x-amz-bucket': process.env.FILEBASE_BUCKET_NAME
-        };
-
-        const response = await fetch('https://s3.filebase.com', {
-            method: 'POST',
-            headers,
-            body: formData
+        // Create the upload command
+        const command = new PutObjectCommand({
+            Bucket: process.env.FILEBASE_BUCKET_NAME,
+            Key: filename,
+            Body: JSON.stringify(metadata),
+            ContentType: 'application/json'
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Filebase error response:', errorText);
-            throw new Error(`Filebase upload failed: ${response.statusText}`);
-        }
+        // Upload the file
+        const response = await s3Client.send(command);
 
-        const data = await response.json();
-        console.log('Filebase success response:', data);
-        return data.Location || data.cid;
+        console.log('Filebase upload success:', response);
+
+        // Return the filename or a success indicator
+        return filename;
     } catch (error) {
         console.error('Error uploading to Filebase:', error);
         throw error;
