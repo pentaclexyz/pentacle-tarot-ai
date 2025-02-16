@@ -1,4 +1,4 @@
-import { TarotCard } from '@/types/tarot';
+import {TarotCard, TarotResponse} from '@/types/tarot';
 import { TAROT_CARDS } from '../lib/tarot';
 import crypto from 'crypto';
 import OpenAI from 'openai';
@@ -16,12 +16,6 @@ cloudinary.config({
 
 interface VeniceResponse {
     images: string[];
-}
-
-// Define an interface for the tarot reading response
-export interface TarotResponse {
-    text: string;
-    imageUrl?: string;
 }
 
 export class TarotReader {

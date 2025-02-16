@@ -15,4 +15,6 @@ export interface TarotCard {
 export interface TarotResponse {
     text: string;
     imageUrl?: string;
+    cid?: string;
 }
+

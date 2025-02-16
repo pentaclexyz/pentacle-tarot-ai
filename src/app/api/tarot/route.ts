@@ -38,8 +38,10 @@ export async function POST(req: Request) {
             );
         }
 
+
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
+
 
         // Modify the upload process to be optional and not break the entire request
         try {
@@ -57,17 +59,17 @@ export async function POST(req: Request) {
             };
 
             // Optional upload with fallback
-            let ipfsHash;
+            let cid;
             try {
-                ipfsHash = await uploadToFilebase(metadata);
+                cid = await uploadToFilebase(metadata);
             } catch (uploadError) {
                 console.warn('IPFS upload failed:', uploadError);
-                ipfsHash = null;
+                cid = null;
             }
 
             return Response.json({
                 ...response,
-                ipfsHash
+                cid
             });
         } catch (processingError) {
             console.error('Error processing reading:', processingError);

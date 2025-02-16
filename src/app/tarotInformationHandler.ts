@@ -1,9 +1,5 @@
 import OpenAI from 'openai';
-
-export interface TarotResponse {
-    text: string;
-    imageUrl?: string;
-}
+import {TarotResponse} from "@/types/tarot";
 
 export class TarotInformationHandler {
     private openai: OpenAI;
