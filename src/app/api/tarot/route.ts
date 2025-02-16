@@ -2,7 +2,7 @@
 import { TarotService } from '../../../scripts/tarotService';
 import { ContentFilter } from '@/lib/contentFilter';
 import { RateLimiter } from '@/lib/rateLimiter';
-import { uploadToFilebase, ReadingMetadata } from '@/lib/filebase';
+import { uploadToFilebase, uploadImageToFilebase, ReadingMetadata } from '@/lib/filebase';
 
 const contentFilter = new ContentFilter();
 const rateLimiter = new RateLimiter();
@@ -17,14 +17,10 @@ export async function POST(req: Request) {
         // Check rate limit with potential bypass
         const rateLimit = rateLimiter.checkLimit(ip, adminToken);
         if (!rateLimit.allowed) {
-            return Response.json(
-                { error: rateLimit.message },
-                { status: 429 }
-            );
+            return Response.json({ error: rateLimit.message }, { status: 429 });
         }
 
         const { question } = await req.json();
-
         if (!question) {
             return Response.json({ error: 'Question is required' }, { status: 400 });
         }
@@ -32,60 +28,59 @@ export async function POST(req: Request) {
         // Validate content
         const validation = contentFilter.validateContent(question);
         if (!validation.isValid) {
-            return Response.json(
-                { error: validation.message },
-                { status: 400 }
-            );
+            return Response.json({ error: validation.message }, { status: 400 });
         }
-
 
         const tarotService = new TarotService();
         const response = await tarotService.generateReading(question);
 
-
-        // Modify the upload process to be optional and not break the entire request
-        try {
-            // Format metadata for potential upload
-            const metadata: ReadingMetadata = {
-                name: `Pentacle Tarot reading ${Date.now()}`,
-                description: "Made for you by your bff for inner reflection",
-                reading: {
-                    cards: response.text.split('\n')[0],
-                    interpretation: response.text,
-                    timestamp: new Date().toISOString(),
-                    type: "tarot"
-                },
-                image: response.imageUrl
-            };
-
-            // Optional upload with fallback
-            let cid;
+        // First, upload the image (if available) to Filebase
+        let imageIpfsCid: string | null = null;
+        if (response.imageUrl) {
             try {
-                cid = await uploadToFilebase(metadata);
-            } catch (uploadError) {
-                console.warn('IPFS upload failed:', uploadError);
-                cid = null;
+                imageIpfsCid = await uploadImageToFilebase(response.imageUrl);
+            } catch (imageUploadError) {
+                console.warn('IPFS upload (image) failed:', imageUploadError);
+                imageIpfsCid = null;
             }
-
-            return Response.json({
-                ...response,
-                cid
-            });
-        } catch (processingError) {
-            console.error('Error processing reading:', processingError);
-            return Response.json(response);
         }
 
+        // Build the Filebase image URL if the image was successfully uploaded
+        const filebaseImageUrl = imageIpfsCid
+            ? `https://pentacle.myfilebase.com/ipfs/${imageIpfsCid}`
+            : response.imageUrl; // fallback to the Cloudinary URL if upload failed
+
+        // Now, prepare the metadata with the updated image URL
+        const metadata: ReadingMetadata = {
+            name: `Pentacle Tarot reading ${Date.now()}`,
+            description: "Made for you by your bff for inner reflection",
+            reading: {
+                cards: response.text.split('\n')[0],
+                interpretation: response.text,
+                timestamp: new Date().toISOString(),
+                type: "tarot"
+            },
+            image: filebaseImageUrl
+        };
+
+        // Upload the metadata JSON to Filebase
+        let cid;
+        try {
+            cid = await uploadToFilebase(metadata);
+        } catch (uploadError) {
+            console.warn('IPFS upload (metadata) failed:', uploadError);
+            cid = null;
+        }
+
+        return Response.json({
+            ...response,
+            cid,              // Metadata CID (JSON file on Filebase)
+            imageCid: imageIpfsCid  // Image CID (Filebase)
+        });
     } catch (error) {
         console.error('Detailed API error:', error);
-        if (error instanceof Error) {
-            return Response.json(
-                { error: 'Failed to generate reading', details: error.message },
-                { status: 500 }
-            );
-        }
         return Response.json(
-            { error: 'Failed to generate reading' },
+            { error: 'Failed to generate reading', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }
         );
     }

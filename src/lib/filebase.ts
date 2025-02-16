@@ -17,34 +17,39 @@ export interface ReadingMetadata {
     image?: string;
 }
 
+const getS3Client = () => {
+    if (
+        !process.env.FILEBASE_ACCESS_KEY ||
+        !process.env.FILEBASE_SECRET_KEY ||
+        !process.env.FILEBASE_BUCKET_NAME
+    ) {
+        throw new Error("Missing required Filebase credentials");
+    }
+
+    return new S3Client({
+        endpoint: "https://s3.filebase.com",
+        region: "us-east-1",
+        credentials: {
+            accessKeyId: process.env.FILEBASE_ACCESS_KEY,
+            secretAccessKey: process.env.FILEBASE_SECRET_KEY,
+        },
+    });
+};
+
+/**
+ * Uploads JSON metadata to Filebase and returns the IPFS CID.
+ */
 export async function uploadToFilebase(
     metadata: ReadingMetadata
 ): Promise<string> {
     try {
-        if (
-            !process.env.FILEBASE_ACCESS_KEY ||
-            !process.env.FILEBASE_SECRET_KEY ||
-            !process.env.FILEBASE_BUCKET_NAME
-        ) {
-            throw new Error("Missing required Filebase credentials");
-        }
-
         console.log("Attempting to upload metadata:", JSON.stringify(metadata, null, 2));
 
-        // Configure S3 client for Filebase
-        const s3Client = new S3Client({
-            endpoint: "https://s3.filebase.com",
-            region: "us-east-1", // Filebase uses us-east-1
-            credentials: {
-                accessKeyId: process.env.FILEBASE_ACCESS_KEY,
-                secretAccessKey: process.env.FILEBASE_SECRET_KEY,
-            },
-        });
+        const s3Client = getS3Client();
 
-        // Generate a unique filename
+        // Generate a unique filename for the JSON file
         const filename = `reading-${Date.now()}.json`;
 
-        // Create the upload command
         const putCommand = new PutObjectCommand({
             Bucket: process.env.FILEBASE_BUCKET_NAME,
             Key: filename,
@@ -52,14 +57,12 @@ export async function uploadToFilebase(
             ContentType: "application/json",
         });
 
-        // Upload the file
         const putResponse = await s3Client.send(putCommand);
         console.log("Filebase upload success:", putResponse);
 
-        // Optionally, wait a bit for metadata to update
+        // Wait briefly to ensure metadata is updated on Filebase
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Retrieve the file metadata (which includes the IPFS CID)
         const headCommand = new HeadObjectCommand({
             Bucket: process.env.FILEBASE_BUCKET_NAME,
             Key: filename,
@@ -67,15 +70,68 @@ export async function uploadToFilebase(
         const headResponse = await s3Client.send(headCommand);
         console.log("File metadata:", headResponse);
 
-        // Filebase stores the IPFS CID in the metadata (the key may vary, often it's 'cid')
-        const cid = headResponse.Metadata?.["cid"];
-        if (!cid) {
+
+        const ipfsCid = headResponse.Metadata?.["cid"];
+        if (!ipfsCid) {
             throw new Error("IPFS CID not found in Filebase metadata");
         }
 
-        return cid;
+        return ipfsCid;
     } catch (error) {
         console.error("Error uploading to Filebase:", error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches an image from the given URL, uploads it to Filebase, and returns the IPFS CID.
+ */
+export async function uploadImageToFilebase(imageUrl: string): Promise<string> {
+    try {
+        console.log("Attempting to upload image from URL:", imageUrl);
+
+        // Fetch the image from Cloudinary (or any other source)
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+            throw new Error("Failed to fetch image from Cloudinary");
+        }
+
+        // Convert the response to an ArrayBuffer
+        const imageBuffer = await imageResponse.arrayBuffer();
+
+        const s3Client = getS3Client();
+
+        // Generate a unique filename for the image
+        const filename = `image-${Date.now()}.jpg`;
+
+        const putCommand = new PutObjectCommand({
+            Bucket: process.env.FILEBASE_BUCKET_NAME,
+            Key: filename,
+            Body: Buffer.from(imageBuffer), // Convert ArrayBuffer to Buffer (Node environment)
+            ContentType: "image/jpeg",
+        });
+
+        const putResponse = await s3Client.send(putCommand);
+        console.log("Image upload success:", putResponse);
+
+        // Wait briefly to ensure metadata is updated on Filebase
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const headCommand = new HeadObjectCommand({
+            Bucket: process.env.FILEBASE_BUCKET_NAME,
+            Key: filename,
+        });
+        const headResponse = await s3Client.send(headCommand);
+        console.log("Image file metadata:", headResponse);
+
+        const ipfsCid = headResponse.Metadata?.["cid"];
+        if (!ipfsCid) {
+            throw new Error("IPFS CID not found in Filebase metadata for image");
+        }
+
+        return ipfsCid;
+    } catch (error) {
+        console.error("Error uploading image to Filebase:", error);
         throw error;
     }
 }
