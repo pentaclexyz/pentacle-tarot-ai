@@ -74,8 +74,8 @@ export async function POST(req: Request) {
 
         return Response.json({
             ...response,
-            cid,              // Metadata CID (JSON file on Filebase)
-            imageCid: imageIpfsCid  // Image CID (Filebase)
+            cid,
+            imageCid: imageIpfsCid
         });
     } catch (error) {
         console.error('Detailed API error:', error);
