@@ -15,7 +15,7 @@ export default function GalleryPage() {
                         Images
                     </h1>
                     <p className="text-lg text-gray-600">
-                        Browse through our collection of AI-generated tarot reading artwork
+                        Coming soon to ipfs
                     </p>
                 </div>
 
