@@ -10,16 +10,17 @@ cloudinary.config({
 
 export async function GET() {
     try {
+        console.log('Starting Cloudinary search...');
+
         const result = await cloudinary.search
             .expression('folder:tarot-readings/*')
             .sort_by('created_at', 'desc')
-            .max_results(100)
+            .max_results(500)  // Increased to get all images
             .execute();
 
-        return NextResponse.json({
-            images: result.resources,
-            total: result.resources.length
-        });
+        console.log('Search completed, found:', result.resources.length, 'images');
+
+        return NextResponse.json(result.resources);
     } catch (error) {
         console.error('Error fetching images:', error);
         return NextResponse.json(

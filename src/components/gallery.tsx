@@ -3,85 +3,51 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 
 interface CloudinaryImage {
     public_id: string;
     secure_url: string;
-    created_at: string;
-}
-
-interface ApiResponse {
-    images: CloudinaryImage[];
-    total: number;
-    error?: string;
+    url: string;
 }
 
 export default function Gallery() {
     const [images, setImages] = useState<CloudinaryImage[]>([]);
     const [selectedImage, setSelectedImage] = useState<CloudinaryImage | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchImages = async () => {
+        const getImages = async () => {
             try {
-                setError(null);
-                const response = await fetch('/api/get-images');
-                const data: ApiResponse = await response.json();
+                console.log('Fetching images...');
+                const res = await fetch('/api/get-images');
+                const data = await res.json();
+                console.log('Images fetched:', data);
 
-                // Debug log
-                console.log('API Response:', data);
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch images');
-                }
-
-                if (data.images && Array.isArray(data.images)) {
-                    setImages(data.images);
-                    console.log(`Loaded ${data.images.length} images successfully`);
+                if (Array.isArray(data)) {
+                    setImages(data);
                 } else {
-                    throw new Error('Invalid response format');
+                    console.error('Unexpected data format:', data);
                 }
             } catch (error) {
-                console.error('Gallery error:', error);
-                setError(error instanceof Error ? error.message : 'Failed to load images');
+                console.error('Failed to fetch images:', error);
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
 
-        fetchImages();
+        getImages();
     }, []);
 
-    if (loading) {
+    if (isLoading) {
         return (
-            <div className="min-h-[400px] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <Alert variant="destructive" className="my-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-            </Alert>
-        );
-    }
-
-    if (!images.length) {
-        return (
-            <Alert className="my-4">
-                <AlertDescription>No images found in the gallery.</AlertDescription>
-            </Alert>
-        );
-    }
-
     return (
-        <div>
+        <div className="container mx-auto p-4">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {images.map((image) => (
                     <Card
@@ -91,7 +57,7 @@ export default function Gallery() {
                     >
                         <div className="aspect-square relative overflow-hidden">
                             <img
-                                src={image.secure_url}
+                                src={image.secure_url || image.url}
                                 alt="Tarot Reading"
                                 className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                                 loading="lazy"
@@ -105,10 +71,10 @@ export default function Gallery() {
                 open={!!selectedImage}
                 onOpenChange={() => setSelectedImage(null)}
             >
-                <DialogContent className="max-w-4xl p-0">
+                <DialogContent className="max-w-[600px] p-0">
                     {selectedImage && (
                         <img
-                            src={selectedImage.secure_url}
+                            src={selectedImage.secure_url || selectedImage.url}
                             alt="Tarot Reading"
                             className="w-full h-auto rounded-lg"
                         />
